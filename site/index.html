@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roster — Deliverance Railroad Union</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/emblem-64.png" sizes="64x64" type="image/png" />
+<link rel="apple-touch-icon" href="assets/emblem.png" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=20260923l" />
+</head>
+<body>
+  <header class="rail-top" id="railTop"></header>
+
+  <main class="page">
+    <div id="claimBanner"></div>
+
+    <div class="page-head band" style="--band:url('/assets/band-roster.jpg')">
+      <div class="grow">
+        <p class="kicker">Union Office</p>
+        <h1>Roster</h1>
+        <p class="sub">Everyone carried on the books of the Deliverance Railroad Union.</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn hide" id="exportBtn" type="button">Data download</button>
+        <button class="btn primary hide" id="addMemberBtn" type="button">Add to roster</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="grow">
+          <h2>Personnel</h2>
+          <p id="countLine">Loading the roster&hellip;</p>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-bottom:12px">
+        <input class="search" id="q" type="search" placeholder="Search name, train, PO&hellip;" autocomplete="off" />
+        <select class="filter" id="gradeFilter"><option value="">All grades</option></select>
+        <select class="filter" id="statusFilter"><option value="">All statuses</option></select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--steam-dim);width:auto;white-space:nowrap">
+          <input type="checkbox" id="hideDeparted" style="width:auto" checked /> Hide departed
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="rr">
+          <thead>
+            <tr>
+              <th>Name</th><th>Grade</th><th>Status</th><th>PO</th>
+              <th class="num">Trains</th><th>Probation</th><th class="note-col">Note</th>
+            </tr>
+          </thead>
+          <tbody id="rosterBody">
+            <tr><td colspan="7" class="empty">Loading&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+<script src="js/app.js?v=20260923l"></script>
+<script src="js/trains.js?v=20260923l"></script>
+<script src="js/roster.js?v=20260923l"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Train Registration — Deliverance Railroad Union</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/emblem-64.png" sizes="64x64" type="image/png" />
+<link rel="apple-touch-icon" href="assets/emblem.png" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=20260923l" />
+</head>
+<body>
+  <header class="rail-top" id="railTop"></header>
+
+  <main class="page">
+    <div id="claimBanner"></div>
+
+    <div class="page-head band" style="--band:url('/assets/band-trains.jpg')">
+      <div class="grow">
+        <p class="kicker">Union Office</p>
+        <h1>Train Registration</h1>
+        <p class="sub">Every locomotive on the line, and who answers for it.</p>
+      </div>
+      <button class="btn primary" id="registerBtn" type="button">Register a train</button>
+    </div>
+
+    <section class="card" id="mineCard">
+      <div class="card-head">
+        <div class="grow">
+          <h2>My Trains</h2>
+          <p id="mineLine">&nbsp;</p>
+        </div>
+      </div>
+      <div id="mineList"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="grow">
+          <h2>The Register</h2>
+          <p id="countLine">Loading&hellip;</p>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-bottom:12px">
+        <input class="search" id="q" type="search" placeholder="Search train or owner&hellip;" autocomplete="off" />
+        <select class="filter" id="scope">
+          <option value="active" selected>Active only</option>
+          <option value="sold">Sold back</option>
+          <option value="repossessed">Repossessed</option>
+          <option value="forfeited">Forfeited</option>
+          <option value="removed">Struck</option>
+          <option value="all">Everything</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="rr">
+          <thead>
+            <tr><th>Train</th><th>Registered to</th><th>Registered</th><th>Standing</th><th class="right">&nbsp;</th></tr>
+          </thead>
+          <tbody id="trainBody"><tr><td colspan="5" class="empty">Loading&hellip;</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+<script src="js/app.js?v=20260923l"></script>
+<script src="js/trains.js?v=20260923l"></script>
+<script src="js/registry.js?v=20260923l"></script>
+</body>
+</html>

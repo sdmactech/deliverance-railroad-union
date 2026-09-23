@@ -1,0 +1,12 @@
+# The real configuration lives outside the web root on the server and holds the
+# Discord client secret. Only the example belongs in version control.
+deploy/config.php
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+sessions/
+backups/
+.DS_Store
+_shot*.html
+_shotdata.js

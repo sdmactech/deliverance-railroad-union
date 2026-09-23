@@ -1,0 +1,413 @@
+/* Deliverance Railroad Union — 1899 railroad-office styling.
+   Slab serif headings, brass on coal, signal colours for state. */
+
+:root {
+  --coal:        #100e0c;
+  --iron:        #191512;
+  --panel:       #221d18;
+  --panel-2:     #2b241e;
+  --edge:        #3a3029;
+  --edge-soft:   #2f2721;
+
+  --brass:       #d9a441;
+  --brass-hi:    #f2ca7d;
+  --brass-dim:   #8a6a2c;
+  --copper:      #b06a3b;
+
+  --steam:       #e6e0d6;
+  --steam-dim:   #b3a99c;
+  --muted:       #8d8377;
+
+  --green:       #6aa86f;
+  --green-bg:    #1d2b1e;
+  --red:         #cf5a45;
+  --red-bg:      #2e1a16;
+  --amber:       #d9a441;
+  --amber-bg:    #2d2415;
+  --blue:        #6f93bd;
+  --blue-bg:     #1a2330;
+
+  --radius: 10px;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(1100px 500px at 50% -180px, #2a231c 0%, transparent 70%),
+    linear-gradient(180deg, var(--coal), #0b0a09 100%);
+  background-attachment: fixed;
+  color: var(--steam);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2, h3 { font-family: "Alfa Slab One", Georgia, serif; font-weight: 400; letter-spacing: .01em; }
+h1 { font-size: 1.9rem; margin: 0 0 4px; color: var(--brass-hi); }
+h2 { font-size: 1.15rem; margin: 0 0 4px; color: var(--brass); }
+h3 { font-size: .98rem; margin: 0 0 6px; color: var(--brass); }
+a  { color: var(--brass-hi); }
+
+/* ------------------------------------------------------------- chrome --- */
+
+.rail-top {
+  border-bottom: 2px solid var(--edge);
+  background: linear-gradient(180deg, #221c16, #171310);
+  position: sticky; top: 0; z-index: 40;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4);
+}
+.rail-top-inner {
+  max-width: 1240px; margin: 0 auto; padding: 12px 16px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; margin-right: auto; }
+.brand-mark {
+  width: 40px; height: 40px; flex: none;
+  border-radius: 9px; background: linear-gradient(160deg, #3b2f24, #191411);
+  border: 1px solid var(--brass-dim);
+  display: grid; place-items: center;
+}
+.brand-text strong {
+  display: block; font-family: "Alfa Slab One", Georgia, serif;
+  font-size: 1.02rem; color: var(--brass-hi); line-height: 1.15; font-weight: 400;
+}
+.brand-text span { display: block; font-size: .72rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+
+.rail-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.rail-nav a {
+  padding: 8px 13px; border-radius: 8px; text-decoration: none;
+  color: var(--steam-dim); font-weight: 600; font-size: .88rem;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.rail-nav a:hover { background: var(--panel); color: var(--steam); }
+.rail-nav a.current { background: var(--panel-2); color: var(--brass-hi); border-color: var(--edge); }
+
+/* A claim waiting on a manager. Lantern on the signal post: it reads at a
+   glance from across the room, and it stops as soon as the queue is clear. */
+.rail-nav a.flagged { color: var(--brass-hi); }
+.nav-badge {
+  display: inline-block; min-width: 18px; margin-left: 7px; padding: 0 5px;
+  border-radius: 9px; font-size: .72rem; font-weight: 800; line-height: 18px;
+  text-align: center; color: #1a1207; background: var(--brass-hi);
+  box-shadow: 0 0 0 0 rgba(242, 202, 125, .65);
+  animation: nav-lantern 2.1s ease-out infinite;
+}
+@keyframes nav-lantern {
+  0%   { box-shadow: 0 0 0 0 rgba(242, 202, 125, .60); }
+  70%  { box-shadow: 0 0 0 9px rgba(242, 202, 125, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(242, 202, 125, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-badge { animation: none; box-shadow: 0 0 0 2px rgba(242, 202, 125, .35); }
+}
+
+.who { display: flex; align-items: center; gap: 9px; }
+.who-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--edge); background: var(--panel-2); }
+.who-name { font-weight: 600; font-size: .86rem; }
+.who-sub { font-size: .7rem; color: var(--muted); }
+
+/* --------------------------------------------------------------- page --- */
+
+.page { max-width: 1240px; margin: 0 auto; padding: 22px 16px 80px; }
+
+.page-head { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.page-head .grow { margin-right: auto; }
+.head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.kicker { margin: 0 0 2px; font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: .88rem; }
+
+.card {
+  background: linear-gradient(180deg, var(--panel), var(--iron));
+  border: 1px solid var(--edge); border-radius: var(--radius);
+  padding: 16px 16px 18px; margin-bottom: 18px; box-shadow: var(--shadow);
+}
+.card-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.card-head .grow { margin-right: auto; }
+.card-head p { margin: 2px 0 0; color: var(--muted); font-size: .85rem; }
+
+/* -------------------------------------------------------------- stats --- */
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: var(--panel-2); border: 1px solid var(--edge-soft); border-radius: 9px; padding: 12px 13px; }
+.tile-label { display: block; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tile-main { display: block; font-size: 1.5rem; font-weight: 700; color: var(--brass-hi); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.tile-note { display: block; font-size: .76rem; color: var(--steam-dim); margin-top: 1px; }
+
+/* -------------------------------------------------------------- forms --- */
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.toolbar .spacer { margin-left: auto; }
+
+input, select, textarea {
+  background: #14100d; color: var(--steam);
+  border: 1px solid var(--edge); border-radius: 8px;
+  padding: 8px 10px; font: inherit; font-size: .9rem; width: 100%;
+  /* 16px minimum avoids iOS zooming the page on focus */
+}
+@media (max-width: 767px) { input, select, textarea { font-size: 16px; } }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--brass-dim); outline-offset: 1px; border-color: var(--brass-dim); }
+input::placeholder, textarea::placeholder { color: #6b6257; }
+textarea { min-height: 70px; resize: vertical; }
+label.field { display: block; margin-bottom: 10px; }
+label.field > span { display: block; font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0 12px; }
+.search { max-width: 280px; }
+.filter { max-width: 190px; }
+
+.btn {
+  appearance: none; cursor: pointer; white-space: nowrap;
+  background: var(--panel-2); color: var(--steam);
+  border: 1px solid var(--edge); border-radius: 8px;
+  padding: 8px 14px; font: inherit; font-size: .88rem; font-weight: 600; width: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover { background: #352c24; border-color: var(--brass-dim); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: linear-gradient(180deg, var(--brass), #b5862f); color: #1a1409; border-color: var(--brass-dim); }
+.btn.primary:hover { background: linear-gradient(180deg, var(--brass-hi), var(--brass)); }
+.btn.danger { color: #f0b3a8; border-color: #5c3128; background: var(--red-bg); }
+.btn.danger:hover { background: #3d2019; border-color: var(--red); }
+.btn.small { padding: 5px 10px; font-size: .8rem; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Download options in the Data download sheet: full-width, wrapping, and
+   without the underline an <a> would otherwise carry. */
+.dl-option {
+  display: block; width: 100%; text-align: left; text-decoration: none;
+  white-space: normal; padding: 11px 14px; line-height: 1.35;
+}
+.dl-option strong { display: block; color: var(--brass-hi); }
+.dl-option span { display: block; margin-top: 2px; font-weight: 400; font-size: .8rem; color: var(--muted); }
+
+/* ------------------------------------------------------------- tables --- */
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+table.rr { width: 100%; border-collapse: collapse; font-size: .89rem; min-width: 640px; }
+table.rr th {
+  text-align: left; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700; padding: 8px 10px;
+  border-bottom: 1px solid var(--edge); white-space: nowrap; position: sticky; top: 0;
+  background: var(--panel);
+}
+table.rr td { padding: 9px 10px; border-bottom: 1px solid var(--edge-soft); vertical-align: middle; }
+table.rr tbody tr:hover { background: rgba(217,164,65,.05); }
+table.rr td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.row-click { cursor: pointer; }
+.name-cell strong { display: block; color: var(--steam); }
+.name-cell span { display: block; font-size: .76rem; color: var(--muted); }
+.empty { padding: 26px 10px; text-align: center; color: var(--muted); }
+
+/* ------------------------------------------------------------- badges --- */
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.badge.grade { background: var(--panel-2); color: var(--brass-hi); border-color: var(--brass-dim); }
+.badge.g0 { color: var(--steam-dim); border-color: var(--edge); }
+.badge.g4, .badge.g5 { background: #3a2c12; }
+.badge.hired      { background: var(--green-bg); color: var(--green); border-color: #2f4a31; }
+.badge.probation  { background: var(--blue-bg); color: var(--blue); border-color: #2b3a4d; }
+.badge.government { background: var(--amber-bg); color: var(--amber); border-color: #4a3c1c; }
+.badge.released   { background: var(--red-bg); color: var(--red); border-color: #4d2a22; }
+/* Endings. Quit is a neutral parting; the disciplinary three read hot, and
+   Banned is the loudest of them. LOA is an absence, not an ending. */
+.badge.loa        { background: var(--blue-bg); color: var(--blue); border-color: #2b3a4d; }
+.badge.quit       { color: var(--muted); border-color: var(--edge); }
+.badge.fired,
+.badge.terminated { background: var(--red-bg); color: var(--red); border-color: #4d2a22; }
+.badge.banned     { background: #4a1a14; color: #ffb4a2; border-color: #7a2c20; font-weight: 800; }
+.badge.sold       { background: var(--amber-bg); color: var(--amber); border-color: #4a3c1c; }
+.badge.removed    { background: var(--red-bg); color: var(--red); border-color: #4d2a22; }
+/* How a registration ended: taken by the union, or given up on the way out. */
+.badge.repossessed { background: #4a2a12; color: #f0bc7a; border-color: #6d4520; }
+.badge.forfeited   { background: var(--panel-2); color: var(--steam-dim); border-color: var(--edge); }
+.badge.active     { background: var(--green-bg); color: var(--green); border-color: #2f4a31; }
+.badge.office     { background: #2a1f33; color: #bb9ad6; border-color: #453257; }
+.badge.ghost      { color: var(--muted); border-color: var(--edge); }
+
+.role-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------ notices --- */
+
+.notice {
+  border-radius: var(--radius); padding: 13px 15px; margin-bottom: 16px;
+  border: 1px solid var(--edge); background: var(--panel-2); font-size: .9rem;
+}
+.notice strong { color: var(--brass-hi); }
+.notice.warn  { background: var(--amber-bg); border-color: #4a3c1c; }
+.notice.bad   { background: var(--red-bg);   border-color: #4d2a22; }
+.notice.good  { background: var(--green-bg); border-color: #2f4a31; }
+.notice .btn { margin-top: 9px; }
+
+/* ------------------------------------------------------------- dialog --- */
+
+dialog.rr-modal {
+  border: 1px solid var(--edge); border-radius: 12px; padding: 0;
+  background: linear-gradient(180deg, var(--panel), var(--iron));
+  color: var(--steam); max-width: 560px; width: calc(100vw - 32px);
+  box-shadow: 0 24px 70px rgba(0,0,0,.65);
+}
+dialog.rr-modal::backdrop { background: rgba(6,5,4,.72); }
+.modal-head { padding: 15px 18px 10px; border-bottom: 1px solid var(--edge); }
+.modal-body { padding: 15px 18px; max-height: min(66vh, 560px); overflow-y: auto; }
+.modal-foot { padding: 12px 18px 15px; border-top: 1px solid var(--edge); display: flex; gap: 8px; flex-wrap: wrap; }
+.modal-foot .spacer { margin-left: auto; }
+
+/* -------------------------------------------------------------- toast --- */
+
+#toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+  background: var(--panel-2); border: 1px solid var(--brass-dim); color: var(--steam);
+  padding: 11px 17px; border-radius: 9px; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease;
+  z-index: 90; max-width: calc(100vw - 32px); font-size: .9rem;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.bad { border-color: var(--red); }
+
+/* --------------------------------------------------------------- misc --- */
+
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 11px; }
+.detail-grid dt { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.detail-grid dd { margin: 2px 0 0; }
+.stack { display: flex; flex-direction: column; gap: 7px; }
+.inline-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.mono { font-variant-numeric: tabular-nums; }
+.right { text-align: right; }
+.hide { display: none !important; }
+
+.login-wrap { min-height: 82vh; display: grid; place-items: center; padding: 24px 16px; }
+.login-card { max-width: 440px; width: 100%; text-align: center; }
+.login-card .brand-mark { width: 60px; height: 60px; margin: 0 auto 14px; }
+.login-card ol { text-align: left; color: var(--steam-dim); padding-left: 20px; font-size: .9rem; }
+.login-card li { margin: 7px 0; }
+.btn-discord {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  background: #5865F2; color: #fff; border: none; border-radius: 9px;
+  padding: 12px 22px; font-weight: 700; font-size: .98rem; text-decoration: none;
+  width: 100%; margin-top: 8px; cursor: pointer;
+}
+.btn-discord:hover { background: #4954d8; }
+
+@media (max-width: 720px) {
+  h1 { font-size: 1.5rem; }
+  .page { padding: 16px 14px 70px; }
+  .card { padding: 13px 13px 15px; }
+  .rail-nav { order: 3; width: 100%; }
+  .rail-nav a { flex: 1 1 auto; text-align: center; }
+  .search, .filter { max-width: none; }
+}
+
+/* ------------------------------------------------------ period plates --- */
+/* 1899 dry-plate photographs behind the page headers. The image sits under a
+   left-weighted scrim so the heading stays legible over the busy parts. */
+
+.page-head.band {
+  position: relative;
+  align-items: flex-end;
+  padding: 30px 24px 24px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--iron);
+  box-shadow: var(--shadow);
+}
+.page-head.band::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: var(--band);
+  background-size: cover;
+  background-position: center 58%;
+  opacity: .55;
+}
+.page-head.band::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg,
+    rgba(16,14,12,.95) 0%, rgba(16,14,12,.86) 38%,
+    rgba(16,14,12,.5) 72%, rgba(16,14,12,.28) 100%);
+}
+.page-head.band > * { position: relative; z-index: 1; }
+.page-head.band h1 { text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+
+/* The brand mark is the union badge itself. */
+.brand-mark.emblem { background: none; border: none; padding: 0; }
+.brand-mark.emblem img { width: 40px; height: 40px; display: block; border-radius: 8px; }
+
+/* Login masthead. */
+.login-card { max-width: 520px; padding: 0; overflow: hidden; text-align: left; }
+.login-masthead {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: url('../assets/masthead.jpg') center 45% / cover no-repeat, var(--iron);
+  border-bottom: 1px solid var(--edge);
+}
+.login-masthead::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(16,14,12,.15) 0%, rgba(16,14,12,.35) 55%, rgba(16,14,12,.96) 100%);
+}
+.login-plate {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  padding: 0 22px 16px; display: flex; align-items: flex-end; gap: 14px;
+}
+.login-plate img { width: 62px; height: 62px; flex: none; filter: drop-shadow(0 3px 8px rgba(0,0,0,.6)); }
+.login-plate .kicker { margin: 0 0 1px; }
+.login-plate h1 { margin: 0; font-size: 1.65rem; text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+.login-body { padding: 18px 22px 24px; }
+.login-body .sub { margin-top: 0; }
+
+@media (max-width: 720px) {
+  .page-head.band { padding: 22px 16px 18px; }
+  .page-head.band::after {
+    background: linear-gradient(170deg, rgba(16,14,12,.72) 0%, rgba(16,14,12,.93) 62%);
+  }
+  .login-plate h1 { font-size: 1.35rem; }
+  .login-plate img { width: 48px; height: 48px; }
+}
+
+/* ----------------------------------------------------------- trackbed --- */
+/* A train crosses the foot of the page. Purely decorative: it never takes a
+   click and it never appears for anyone who has asked for reduced motion. */
+
+#rrTrackbed {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 150px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;            /* under the sticky header (40) and dialogs */
+}
+.rr-train {
+  position: absolute;
+  bottom: 26px;          /* the rail line */
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  will-change: transform;
+  transform: translate3d(var(--rr-from, -100%), 0, 0);
+}
+.rr-car {
+  display: block;
+  flex: none;
+  /* The keyed clips carry their own alpha; nothing else to do but sit there. */
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .55));
+}
+@keyframes rr-roll {
+  from { transform: translate3d(var(--rr-from), 0, 0); }
+  to   { transform: translate3d(var(--rr-to), 0, 0); }
+}
+
+@media (max-width: 760px) {
+  #rrTrackbed { height: 100px; }
+  .rr-train { bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #rrTrackbed { display: none; }
+}

@@ -1,0 +1,143 @@
+DELIVERANCE RAILROAD UNION — SITE SOURCE, FOR REVIEW
+====================================================
+Sent for a security read-through. Nothing here is obfuscated or minified.
+
+WHAT THIS IS
+------------
+A roster and train-registration site for the Railroad Union, at
+http://sodrailway.mytunnel.org:19188 — a private page for union members to see
+who is on the books and which engines are registered to whom. It runs on a home
+NAS in a Docker container. It is not connected to the RedM server in any way and
+does not touch game data.
+
+
+THE PART YOU PROBABLY CARE ABOUT: THERE IS NO BOT
+-------------------------------------------------
+This app has NO bot, and nothing has been added to your Discord server.
+
+It uses Discord OAuth2 — the ordinary "Sign in with Discord" flow. The person
+signing in is shown Discord's own consent screen and approves it themselves.
+The app then asks Discord, using THAT PERSON'S OWN access token, two things:
+
+    identify              who they are (id, username, avatar)
+    guilds.members.read   their membership in ONE named guild
+
+The second scope is the one worth checking. It reads a member's roles from the
+USER's side of the connection, which is why no bot and no server permissions are
+needed. It is scoped to a single guild id, hard-coded in the config, so the app
+cannot see any other server the person is in. See api/oauth.php, which is the
+whole of the login flow, and is about 200 lines.
+
+The token is used once, at sign-in, and is NOT stored. In api/oauth.php the
+access token exists only as a Bearer header for those two reads; what goes into
+the session afterwards is exactly this, and nothing more:
+
+    discord id, username, display name, avatar hash,
+    which of the three union roles they hold, and the time they signed in
+
+The session id is regenerated on login (session_regenerate_id) to close off
+session fixation.
+
+
+WHAT IT STORES
+--------------
+A SQLite file on the NAS, outside the web root. Per member:
+
+    the name they use in the Railroad Union
+    their rank on the union ladder, and their status
+    their Discord user id, username and avatar hash, IF they choose to claim
+        a roster name (a manager has to approve the claim)
+    which of the three union roles they held the last time they signed in
+    a PO box number, dates, and an optional note
+
+It does NOT store: Discord tokens, passwords, email addresses, IP addresses,
+messages, any other server they are in, or any role other than the three below.
+
+Every write is recorded in an audit log with who did it and when — see the
+"events" table in api/bootstrap.php, and the Yard Office page.
+
+
+THE THREE ROLES IT LOOKS AT
+---------------------------
+    Railroad Union       1436963147750703245   required to get in at all
+    Railway Operations   1538626722004602960   staff: hire, edit, promote to 2
+    Railway Executives   1437964081452810260   manager: delete, merge, rank 3+
+
+No other role is read or acted on. Somebody with none of these is refused at
+the door. The IDs are left in deploy/config.example.php on purpose so you can
+check them against your own server.
+
+
+WHAT IS DELIBERATELY NOT IN THIS BUNDLE
+---------------------------------------
+    the Discord client secret   replaced with a placeholder in
+                                deploy/config.example.php. It is the only
+                                secret, it lives only on the server, in a file
+                                outside the web root, mode 0640.
+
+    the database                it holds real members' Discord ids. Sending it
+                                to anyone would be the exact thing this review
+                                is meant to prevent.
+
+    sessions and backups        same reason.
+
+    artwork and video           ~5.6 MB of images and the animated train at the
+                                foot of the page. Not code; nothing executes.
+                                assets-MANIFEST.txt lists every one with a
+                                SHA-256 so you can confirm nothing is hiding
+                                among them. Happy to send them separately.
+
+
+THINGS YOU SHOULD KNOW THAT ARE NOT IDEAL
+-----------------------------------------
+Raising these rather than letting you find them:
+
+ 1. It is served over plain HTTP, not HTTPS. The session cookie and the OAuth
+    round trip travel unencrypted. On a hostile network a manager's session
+    cookie could be lifted and would be usable until it expires. This was a
+    deliberate choice by the site owner; it is the first thing to change if you
+    are uncomfortable with it.
+
+ 2. Sessions last 24 hours and roles are only read at sign-in. If you remove
+    somebody's role in Discord, they keep the old access until their session
+    expires - up to a day. Shorten 'session_days' if you want that tighter.
+
+ 3. It is a home NAS on a residential connection, exposed through one forwarded
+    port. Availability is nobody's guarantee.
+
+
+HOW TO SHUT IT OFF
+------------------
+Entirely your call, and it needs nothing from us:
+
+  - Delete or disable the Discord application's OAuth2 credentials, and every
+    sign-in stops immediately. (The app is owned by the site owner's Discord
+    account, so ask them, or:)
+  - Remove the "Railroad Union" role from people and they are refused at the
+    door on their next sign-in.
+  - Members can revoke the app themselves at any time:
+    Discord → User Settings → Authorized Apps.
+
+
+HOW TO READ IT
+--------------
+    site/api/oauth.php      the whole login flow. Start here.
+    site/api/bootstrap.php  database schema, session handling, and the
+                            permission model (rr_permissions).
+    site/api/roster.php     roster read/write, claims, merge, delete
+    site/api/trains.php     train registration
+    site/api/export.php     CSV/JSON export, managers only
+    site/js/*.js            the browser side. No build step, no bundler,
+                            no third-party JavaScript at all.
+    deploy/                 the container and web server config
+
+Exactly two external things are loaded by any page, and nothing else:
+
+    fonts.googleapis.com / fonts.gstatic.com   the typeface
+    cdn.discordapp.com                         members' own Discord avatars
+
+There is no analytics, no tracking, and no third-party JavaScript anywhere.
+No build step, no bundler, no package manager — what is in site/js is exactly
+what the browser runs.
+
+Questions, or anything you want changed — say so and it gets changed.

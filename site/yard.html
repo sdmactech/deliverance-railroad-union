@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Yard Office — Deliverance Railroad Union</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/emblem-64.png" sizes="64x64" type="image/png" />
+<link rel="apple-touch-icon" href="assets/emblem.png" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=20260923l" />
+</head>
+<body>
+  <header class="rail-top" id="railTop"></header>
+
+  <main class="page">
+    <div class="page-head band" style="--band:url('/assets/band-yard.jpg')">
+      <div class="grow">
+        <p class="kicker">Railway Executives only</p>
+        <h1>Yard Office</h1>
+        <p class="sub">Claims waiting on you, and everything the office has done.</p>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><div class="grow">
+        <h2>Roster claims</h2>
+        <p>People who signed in and said which name on the roster is theirs.</p>
+      </div></div>
+      <div id="claims">Loading&hellip;</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><div class="grow">
+        <h2>Office log</h2>
+        <p>Every change, who made it, and when.</p>
+      </div>
+      <select class="filter" id="logFilter">
+        <option value="">Everything</option>
+        <option value="member">Roster only</option>
+        <option value="train">Trains only</option>
+        <option value="claim">Claims only</option>
+        <option value="signin">Sign-ins only</option>
+      </select></div>
+      <div class="table-wrap">
+        <table class="rr">
+          <thead><tr><th>When</th><th>Who</th><th>Did what</th><th>Detail</th></tr></thead>
+          <tbody id="logBody"><tr><td colspan="4" class="empty">Loading&hellip;</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+<script src="js/app.js?v=20260923l"></script>
+<script src="js/trains.js?v=20260923l"></script>
+<script src="js/yard.js?v=20260923l"></script>
+</body>
+</html>
