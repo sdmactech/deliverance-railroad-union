@@ -327,7 +327,10 @@
       try {
         const r = await RR.post('api/roster.php', { action: 'delete', memberId: m.id });
         dlg.close();
-        RR.toast('Removed from the roster' + (r.trainsRemoved ? ' with ' + r.trainsRemoved + ' train(s).' : '.'));
+        RR.toast('Removed from the roster'
+          + (r.trainsRemoved
+              ? ' with ' + r.trainsRemoved + ' train' + (r.trainsRemoved === 1 ? '' : 's') + '.'
+              : '.'));
         await load();
       } catch (e) { RR.toast(e.message, true); }
     });

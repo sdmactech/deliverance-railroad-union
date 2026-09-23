@@ -75,6 +75,10 @@
     'export': 'downloaded a data export'
   };
 
+  function plural(n, one, many) {
+    return n + ' ' + (n === 1 ? one : (many || one + 's'));
+  }
+
   function summarise(ev) {
     let detail = ev.detail;
     try { detail = JSON.parse(ev.detail); } catch (e) { return RR.esc(String(ev.detail || '')); }
@@ -91,13 +95,13 @@
       const r = detail.record || {};
       return 'removed <strong>' + RR.esc((r.first_name || '') + ' ' + (r.last_name || '')) + '</strong>'
         + (detail.trainsRemoved && detail.trainsRemoved.length
-            ? ' and struck ' + detail.trainsRemoved.length + ' train(s)' : '');
+            ? ' and struck ' + plural(detail.trainsRemoved.length, 'train') : '');
     }
     if (ev.action === 'member.merge') {
       const a = detail.absorbed || {};
       return 'absorbed <strong>' + RR.esc((a.first_name || '') + ' ' + (a.last_name || '')) + '</strong>'
         + (detail.trainsMoved && detail.trainsMoved.length
-            ? ', moving ' + detail.trainsMoved.length + ' train(s) across' : '')
+            ? ', moving ' + plural(detail.trainsMoved.length, 'train') + ' across' : '')
         + (detail.fieldsTaken && detail.fieldsTaken.length
             ? ' <span class="muted">(took ' + RR.esc(detail.fieldsTaken.join(', ')) + ')</span>' : '');
     }
