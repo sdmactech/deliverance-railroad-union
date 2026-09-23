@@ -366,7 +366,8 @@ function rr_permissions(?array $viewer = null): array
         return ['signedIn' => false, 'member' => false, 'staff' => false,
                 'manager' => false, 'canEdit' => false, 'canHire' => false,
                 'canPromote' => false, 'maxGrade' => 0, 'canDelete' => false,
-                'canSeeNotes' => false, 'grade' => null, 'memberId' => null];
+                'canSeeNotes' => false, 'canYard' => false,
+                'grade' => null, 'memberId' => null];
     }
     $roles   = $viewer['roles'] ?? [];
     $isUnion = !empty($roles['union']);
@@ -396,6 +397,10 @@ function rr_permissions(?array $viewer = null): array
         // The roster note is office-only: Operations and Executives, by the
         // Discord role. A roster grade of 2 does not by itself open it.
         'canSeeNotes' => $isStaff || $isExec,
+        // The Yard Office - the claim queue and the office log - is staff work.
+        // Mac, 2026-09-23: "Yard Office should be for Operations and Executives
+        // only - not general union members."
+        'canYard'     => $isStaff || $isExec,
         'grade'      => $grade,
         'memberId'   => $me['id'] ?? null,
     ];
@@ -407,6 +412,17 @@ function rr_require_manager(): array
     $p = rr_permissions($v);
     if (empty($p['manager'])) {
         rr_fail('Only Railway Executives can do that.', 403);
+    }
+    return $v;
+}
+
+/** Operations staff and Railway Executives. The Yard Office bar. */
+function rr_require_staff(): array
+{
+    $v = rr_require_viewer();
+    $p = rr_permissions($v);
+    if (empty($p['canYard'])) {
+        rr_fail('The Yard Office is for Railway Operations and Railway Executives.', 403);
     }
     return $v;
 }

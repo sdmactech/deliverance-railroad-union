@@ -71,7 +71,7 @@ if ($method === 'GET') {
     }
 
     if ($action === 'claims') {
-        rr_require_manager();
+        rr_require_staff();
         $rows = $db->query("SELECT c.*, m.first_name, m.last_name
                             FROM claims c LEFT JOIN members m ON m.id = c.member_id
                             WHERE c.status = 'pending' ORDER BY c.requested_at")->fetchAll();
@@ -88,7 +88,7 @@ if ($method === 'GET') {
     }
 
     if ($action === 'events') {
-        rr_require_manager();
+        rr_require_staff();
         $limit = min(500, max(1, (int)($_GET['limit'] ?? 200)));
         $st = $db->prepare('SELECT * FROM events ORDER BY id DESC LIMIT ?');
         $st->bindValue(1, $limit, PDO::PARAM_INT);
@@ -142,7 +142,9 @@ if ($action === 'claim') {
 
 /** Manager approving or denying a claim. */
 if ($action === 'claim_decide') {
-    $viewer = rr_require_manager();
+    // Approving a claim links a Discord account to a roster name - roster work,
+    // which is what Operations is for. Unlinking one again stays executive.
+    $viewer = rr_require_staff();
     $discordId = rr_str($in['discordId'] ?? '', 40);
     $decision  = (string)($in['decision'] ?? '');
     if (!in_array($decision, ['approve', 'deny'], true)) rr_fail('Decision must be approve or deny.');

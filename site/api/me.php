@@ -48,10 +48,11 @@ if ($row) {
     ];
 }
 
-// Claims sitting in the Yard Office waiting on a manager. Drives the badge
-// on the Yard Office tab so nobody's claim sits unnoticed for days.
+// Claims sitting in the Yard Office. Drives the badge on the Yard Office
+// tab so nobody's claim sits unnoticed for days. Shown to anyone who can
+// actually act on it - Operations and Executives.
 $pending = 0;
-if (!empty($perms['manager'])) {
+if (!empty($perms['canYard'])) {
     $c = rr_db()->query("SELECT COUNT(*) FROM claims WHERE status = 'pending'");
     $pending = (int)$c->fetchColumn();
 }

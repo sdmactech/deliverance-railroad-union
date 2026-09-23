@@ -58,7 +58,7 @@ Discord decides **what you may do**. The roster decides **what rank you are**.
 | Discord role | Can |
 | --- | --- |
 | **Railroad Union** | the door — without it you are refused entry |
-| **Railway Operations** | hire onto the roster, edit records, promote up to grade 2 |
+| **Railway Operations** | hire onto the roster, edit records, promote up to grade 2, read the office note, and work the Yard Office |
 | **Railway Executives** | everything above, plus delete, merge, reassign, the `office` field, and any rank of 3+ |
 
 A roster grade of 3 without the Railway Executives role gets **no** manager powers.
@@ -75,7 +75,9 @@ Supervisor · `3` Railroad Superintendent · `4` Railroad Union President · `5`
 - **Train registration** — engines registered to members, sold back to the government,
   repossessed by the union, or forfeited when somebody leaves
 - **Claims** — members claim their own roster name; a manager approves it
-- **Yard Office** — the claim queue and a full audit log of every change
+- **Yard Office** — the claim queue and a full audit log of every change, open to
+  Operations and Executives. Approving a claim is roster work; unlinking, merging
+  and deleting stay with Executives.
 - **Data download** — roster CSV, registrations CSV, or a complete JSON backup
 - **Two layouts per page** — what you see depends on what you may see, and the API
   withholds the rest rather than hiding it in the page

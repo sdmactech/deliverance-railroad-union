@@ -118,7 +118,7 @@
       { href: 'index.html',  label: 'Roster',  key: 'roster' },
       { href: 'trains.html', label: 'Train Registration', key: 'trains' }
     ];
-    if (p.manager) {
+    if (p.canYard) {
       links.push({
         href: 'yard.html', label: 'Yard Office', key: 'yard',
         badge: Number(RR.me.pendingClaims || 0)
@@ -144,7 +144,7 @@
                + esc(l.label)
                + (l.badge
                    ? '<span class="nav-badge" title="' + l.badge + ' claim'
-                     + (l.badge === 1 ? '' : 's') + ' waiting on a manager">' + l.badge + '</span>'
+                     + (l.badge === 1 ? '' : 's') + ' waiting on the office">' + l.badge + '</span>'
                    : '')
                + '</a>';
         }).join('') + '</nav>'

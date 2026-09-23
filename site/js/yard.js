@@ -65,7 +65,14 @@
     'claim.deny': 'denied a claim',
     'train.register': 'registered a train', 'train.sell': 'sold a train back',
     'train.remove': 'struck a train', 'train.reinstate': 'reinstated a train',
-    'train.update': 'edited a train'
+    'train.update': 'edited a train',
+    // Added with the merge, departure and export work - without these the log
+    // showed the bare action name, which looked broken.
+    'member.merge': 'merged two roster records',
+    'train.repossess': 'repossessed a train',
+    'train.repossessed': 'repossessed engines on a departure',
+    'train.forfeited': 'took engines forfeited on a departure',
+    'export': 'downloaded a data export'
   };
 
   function summarise(ev) {
@@ -85,6 +92,29 @@
       return 'removed <strong>' + RR.esc((r.first_name || '') + ' ' + (r.last_name || '')) + '</strong>'
         + (detail.trainsRemoved && detail.trainsRemoved.length
             ? ' and struck ' + detail.trainsRemoved.length + ' train(s)' : '');
+    }
+    if (ev.action === 'member.merge') {
+      const a = detail.absorbed || {};
+      return 'absorbed <strong>' + RR.esc((a.first_name || '') + ' ' + (a.last_name || '')) + '</strong>'
+        + (detail.trainsMoved && detail.trainsMoved.length
+            ? ', moving ' + detail.trainsMoved.length + ' train(s) across' : '')
+        + (detail.fieldsTaken && detail.fieldsTaken.length
+            ? ' <span class="muted">(took ' + RR.esc(detail.fieldsTaken.join(', ')) + ')</span>' : '');
+    }
+    if (ev.action === 'train.repossessed' || ev.action === 'train.forfeited') {
+      return '<strong>' + RR.esc((detail.trains || []).join(', ')) + '</strong>'
+        + (detail.because ? ' <span class="muted">— ' + RR.esc(detail.because) + '</span>' : '');
+    }
+    if (ev.action === 'train.repossess') {
+      return '<strong>' + RR.esc(detail.name || '') + '</strong>'
+        + (detail.reason ? ' <span class="muted">— ' + RR.esc(detail.reason) + '</span>' : '');
+    }
+    if (ev.action === 'export') {
+      return '<span class="muted">' + RR.esc(ev.target || '')
+        + (detail.rows !== undefined ? ' · ' + detail.rows + ' rows' : '') + '</span>';
+    }
+    if (ev.action === 'claim.approve' || ev.action === 'claim.deny') {
+      return detail.discordName ? '<strong>' + RR.esc(detail.discordName) + '</strong>' : '';
     }
     if (ev.action === 'signin') {
       const held = Object.keys(detail).filter(function (k) { return detail[k]; });
@@ -117,10 +147,10 @@
   // --------------------------------------------------------------- boot ---
 
   RR.boot('yard').then(function (me) {
-    if (!me.permissions.manager) {
+    if (!me.permissions.canYard) {
       document.querySelector('main.page').innerHTML =
-        '<div class="notice bad"><strong>The Yard Office is for Railway Executives.</strong> '
-        + 'Your Discord account does not hold that role.</div>';
+        '<div class="notice bad"><strong>The Yard Office is for Railway Operations '
+        + 'and Railway Executives.</strong> Your Discord account holds neither role.</div>';
       return;
     }
     $('logFilter').addEventListener('change', renderLog);
