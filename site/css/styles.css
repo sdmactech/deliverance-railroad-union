@@ -411,3 +411,27 @@ dialog.rr-modal::backdrop { background: rgba(6,5,4,.72); }
 @media (prefers-reduced-motion: reduce) {
   #rrTrackbed { display: none; }
 }
+
+/* ---- On-duty hours, in the member window (office-only) ---- */
+.hours-tiles { margin: 6px 0 10px; grid-template-columns: repeat(3, 1fr); }
+.hours-tiles .tile { padding: 9px 11px; }
+.hours-tiles .tile-main { font-size: 1.2rem; }
+table.rr.hours { min-width: 420px; font-size: .84rem; }
+table.rr.hours td { padding: 7px 9px; }
+table.rr.hours tr.shift-row { cursor: pointer; }
+table.rr.hours tr.shift-row.open td { border-bottom-color: transparent; }
+table.rr.hours tr.shift-post td { background: var(--panel-2); font-size: .82rem; }
+.shift-flag { display: inline-block; margin-left: 5px; width: 15px; height: 15px; line-height: 15px; border-radius: 50%;
+  text-align: center; font-size: .7rem; font-weight: 800; background: var(--amber-bg); color: var(--amber); }
+.shift-note { color: var(--amber); margin-bottom: 4px; }
+.shift-raw { white-space: pre-wrap; color: var(--steam); }
+.shift-meta { margin-top: 4px; font-size: .76rem; }
+.hours-src { margin: 8px 0 0; font-size: .76rem; }
+@media (max-width: 720px) {
+  .hours-tiles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .hours-tiles .tile-main { font-size: 1.05rem; }
+  /* Fit Date / In / Out / Hours on a phone; the zone is in the opened post. */
+  table.rr.hours { min-width: 0; }
+  table.rr.hours th:nth-child(4), table.rr.hours tr.shift-row td:nth-child(4) { display: none; }
+  table.rr.hours td, table.rr.hours th { padding: 7px 6px; }
+}

@@ -195,6 +195,30 @@ function rr_migrate(PDO $db): void
         )
     ");
     $db->exec("CREATE INDEX IF NOT EXISTS events_at ON events(at DESC)");
+
+    // On-duty shifts, one row per in/out pair. Loaded from the Discord duty
+    // channel (2026-10-08); the post's message id is kept in source_id so a
+    // re-import tops up without duplicating. minutes is NULL when the post has
+    // no usable time out. Office-only, like the roster note.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS shifts (
+            id            TEXT PRIMARY KEY,
+            member_id     TEXT NOT NULL,
+            source        TEXT NOT NULL DEFAULT 'discord',
+            source_id     TEXT NOT NULL DEFAULT '',
+            posted_at     TEXT NOT NULL DEFAULT '',
+            shift_date    TEXT NOT NULL DEFAULT '',
+            time_in       TEXT NOT NULL DEFAULT '',
+            time_out      TEXT NOT NULL DEFAULT '',
+            tz            TEXT NOT NULL DEFAULT '',
+            minutes       INTEGER,
+            note          TEXT NOT NULL DEFAULT '',
+            raw           TEXT NOT NULL DEFAULT '',
+            discord_name  TEXT NOT NULL DEFAULT '',
+            imported_at   TEXT NOT NULL DEFAULT ''
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS shifts_member ON shifts(member_id, shift_date DESC)");
 }
 
 /** Nothing is ever hard-deleted without a trace; every write lands here. */
@@ -366,7 +390,7 @@ function rr_permissions(?array $viewer = null): array
         return ['signedIn' => false, 'member' => false, 'staff' => false,
                 'manager' => false, 'canEdit' => false, 'canHire' => false,
                 'canPromote' => false, 'maxGrade' => 0, 'canDelete' => false,
-                'canSeeNotes' => false, 'canYard' => false,
+                'canSeeNotes' => false, 'canYard' => false, 'canSeeHours' => false,
                 'grade' => null, 'memberId' => null];
     }
     $roles   = $viewer['roles'] ?? [];
@@ -401,6 +425,9 @@ function rr_permissions(?array $viewer = null): array
         // Mac, 2026-09-23: "Yard Office should be for Operations and Executives
         // only - not general union members."
         'canYard'     => $isStaff || $isExec,
+        // On-duty hours are office-only too (Mac, 2026-10-08). Withheld at the
+        // API, the same way the note is.
+        'canSeeHours' => $isStaff || $isExec,
         'grade'      => $grade,
         'memberId'   => $me['id'] ?? null,
     ];

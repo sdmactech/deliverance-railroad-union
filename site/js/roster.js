@@ -168,6 +168,51 @@
     }).join('');
   }
 
+  /** "245" minutes -> "4.1" hours. */
+  function hrs(mins) { return (mins / 60).toFixed(1); }
+
+  /**
+   * On-duty hours, office-only. Three running totals, then every shift with the
+   * times exactly as the driver posted them; a row opens to show the post.
+   */
+  function hoursHtml(h) {
+    const head = '<h3 style="margin-top:14px">On-duty hours</h3>';
+    if (!h) return head + '<p class="muted" style="margin:6px 0 0">Hours could not be loaded.</p>';
+    if (!h.shifts.length) {
+      return head + '<p class="muted" style="margin:6px 0 0">No shifts logged in the duty channel'
+        + (h.coveredThrough ? ' through ' + RR.esc(RR.fmtDate(h.coveredThrough)) : '') + '.</p>';
+    }
+    const tile = function (label, k) {
+      const n = h.counts[k];
+      return '<div class="tile"><span class="tile-label">' + label + '</span>'
+        + '<span class="tile-main">' + hrs(h.totals[k]) + ' h</span>'
+        + '<span class="tile-note">' + n + ' shift' + (n === 1 ? '' : 's') + '</span></div>';
+    };
+    const rows = h.shifts.map(function (s) {
+      const flag = s.note ? ' <span class="shift-flag" title="' + RR.esc(s.note) + '">!</span>' : '';
+      return '<tr class="shift-row' + (s.note ? ' flagged' : '') + '" title="Show the post">'
+        + '<td>' + RR.esc(RR.fmtDate(s.date)) + '</td>'
+        + '<td>' + RR.esc(s.timeIn) + '</td>'
+        + '<td>' + (s.timeOut ? RR.esc(s.timeOut) : '<span class="muted">&mdash;</span>') + '</td>'
+        + '<td>' + RR.esc(s.tz) + '</td>'
+        + '<td class="num">' + (s.minutes === null ? '<span class="muted">&mdash;</span>' : hrs(s.minutes)) + flag + '</td>'
+        + '</tr>'
+        + '<tr class="shift-post hide"><td colspan="5">'
+        + (s.note ? '<div class="shift-note">' + RR.esc(s.note) + '</div>' : '')
+        + '<div class="shift-raw">' + RR.esc(String(s.raw || '').split(' / ').join('\n')) + '</div>'
+        + '<div class="muted shift-meta">Posted ' + RR.esc(RR.fmtDateTime(s.postedAt))
+        + (s.discordName ? ' by ' + RR.esc(s.discordName) : '') + '</div>'
+        + '</td></tr>';
+    }).join('');
+    return head
+      + '<div class="tiles hours-tiles">' + tile('Last 14 days', 'd14') + tile('Last 30 days', 'd30') + tile('Last 60 days', 'd60') + '</div>'
+      + '<div class="table-wrap"><table class="rr hours">'
+      + '<thead><tr><th>Date</th><th>Time in</th><th>Time out</th><th>Zone</th><th class="num">Hours</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div>'
+      + '<p class="muted hours-src">From #railroad-duty-channel, posts through '
+      + RR.esc(RR.fmtDateTime(h.coveredThrough)) + '. Times are as the driver posted them. Tap a shift to see the post.</p>';
+  }
+
   async function openMember(id) {
     const m = MEMBERS.find(function (x) { return x.id === id; });
     if (!m) return;
@@ -178,10 +223,15 @@
     const canRank = PERMS.canPromote && (isMgr || m.grade <= PERMS.maxGrade);
 
     let trains = [];
+    let hours = null;
+    const hoursReq = PERMS.canSeeHours
+      ? RR.api('api/hours.php?action=member&id=' + encodeURIComponent(id)).catch(function () { return null; })
+      : Promise.resolve(null);
     try {
       const t = await RR.api('api/trains.php?action=list&scope=all&owner=' + encodeURIComponent(id));
       trains = t.trains;
     } catch (e) { /* the record still opens without them */ }
+    hours = await hoursReq;
 
     const trainHtml = trains.length
       ? '<ul class="stack" style="list-style:none;padding:0;margin:6px 0 0">' + trains.map(function (t) {
@@ -220,6 +270,7 @@
             + RR.esc(m.note) + '</textarea></label>'
           : '')
       + '<h3 style="margin-top:14px">Trains</h3>' + trainHtml
+      + (PERMS.canSeeHours ? hoursHtml(hours) : '')
       + '<h3 style="margin-top:14px">Discord</h3>'
       + '<p class="muted" style="margin:4px 0 0;font-size:.86rem">'
       +   (m.linked
@@ -240,6 +291,17 @@
       + '<div class="modal-body">' + body + '</div>'
       + '<div class="modal-foot">' + foot + '</div>'
     );
+
+    // A shift row opens to show the duty-channel post it came from.
+    Array.prototype.forEach.call(dlg.querySelectorAll('tr.shift-row'), function (tr) {
+      tr.addEventListener('click', function () {
+        const det = tr.nextElementSibling;
+        if (det && det.classList.contains('shift-post')) {
+          det.classList.toggle('hide');
+          tr.classList.toggle('open');
+        }
+      });
+    });
 
     // The leave date only belongs on screen while the member is on leave.
     const st = dlg.querySelector('#fStatus'), loaWrap = dlg.querySelector('#fLoaWrap');

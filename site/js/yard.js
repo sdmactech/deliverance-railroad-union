@@ -72,7 +72,8 @@
     'train.repossess': 'repossessed a train',
     'train.repossessed': 'repossessed engines on a departure',
     'train.forfeited': 'took engines forfeited on a departure',
-    'export': 'downloaded a data export'
+    'export': 'downloaded a data export',
+    'hours.import': 'loaded on-duty hours from Discord'
   };
 
   function plural(n, one, many) {
@@ -90,6 +91,10 @@
         return '<span class="muted">' + RR.esc(k) + ':</span> '
           + RR.esc(pair[0] || '—') + ' &rarr; <strong>' + RR.esc(pair[1] || '—') + '</strong>';
       }).join('<br>');
+    }
+    if (ev.action === 'hours.import') {
+      return plural(detail.shifts || 0, 'shift') + ' for ' + plural(detail.members || 0, 'member')
+        + (detail.through ? ', posts through ' + RR.esc(RR.fmtDate(detail.through)) : '');
     }
     if (ev.action === 'member.delete') {
       const r = detail.record || {};
