@@ -93,7 +93,9 @@
       }).join('<br>');
     }
     if (ev.action === 'hours.import') {
-      return plural(detail.shifts || 0, 'shift') + ' for ' + plural(detail.members || 0, 'member')
+      return plural(detail.shifts || 0, 'new shift')
+        + (detail.updated ? ', ' + plural(detail.updated, 'edited shift') + ' refreshed' : '')
+        + ' for ' + plural(detail.members || 0, 'member')
         + (detail.through ? ', posts through ' + RR.esc(RR.fmtDate(detail.through)) : '');
     }
     if (ev.action === 'member.delete') {
