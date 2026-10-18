@@ -506,3 +506,7 @@ table.rr.hours tr.shift-post td { background: var(--panel-2); font-size: .82rem;
   .dr-bar i, .dr-stack i { transition: none; }
   #drPanel { animation: none; }
 }
+
+/* Last on duty (executives only): two weeks without a shift is worth a look. */
+.duty-col { white-space: nowrap; }
+.duty-stale { color: var(--red); }

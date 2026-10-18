@@ -82,9 +82,26 @@
     document.querySelectorAll('.note-col').forEach(function (el) {
       el.classList.toggle('hide', !show);
     });
+    // Last on duty is executives-only; the API only sends it to them.
+    document.querySelectorAll('.duty-col').forEach(function (el) {
+      el.classList.toggle('hide', !PERMS.manager);
+    });
   }
 
-  function cols() { return PERMS.canSeeNotes ? 7 : 6; }
+  function cols() { return 6 + (PERMS.canSeeNotes ? 1 : 0) + (PERMS.manager ? 1 : 0); }
+
+  /** "2026-10-14" -> "Oct 14 · 3 days ago", against today's local date. */
+  function lastDutyCell(d) {
+    if (!d) return '<span class="muted">never</span>';
+    const p = d.split('-').map(Number);
+    const then = new Date(p[0], p[1] - 1, p[2]);
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const days = Math.round((now - then) / 86400000);
+    const ago = days <= 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago';
+    return '<span class="' + (days >= 14 ? 'duty-stale' : '') + '">'
+      + RR.esc(then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
+      + '<br><span class="muted" style="font-size:.74rem">' + ago + '</span></span>';
+  }
 
   function visible() {
     const q      = $('q').value.trim().toLowerCase();
@@ -146,6 +163,7 @@
         + '<td class="mono">' + (m.po ? RR.esc(m.po) : '<span class="muted">—</span>') + '</td>'
         + '<td class="num">' + (m.activeTrains || 0) + '</td>'
         + '<td>' + probationCell(m) + '</td>'
+        + (PERMS.manager ? '<td class="duty-col">' + lastDutyCell(m.lastOnDuty) + '</td>' : '')
         + (PERMS.canSeeNotes
             ? '<td class="muted note-col" style="max-width:220px">' + RR.esc(m.note || '') + '</td>'
             : '')
