@@ -118,6 +118,10 @@
       { href: 'index.html',  label: 'Roster',  key: 'roster' },
       { href: 'trains.html', label: 'Train Registration', key: 'trains' }
     ];
+    // Daily Report: Operations and Executives, like the hours behind it.
+    if (p.canSeeHours) {
+      links.push({ href: 'report.html', label: 'Daily Report', key: 'report' });
+    }
     if (p.canYard) {
       links.push({
         href: 'yard.html', label: 'Yard Office', key: 'yard',

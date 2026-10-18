@@ -224,6 +224,34 @@ function rr_migrate(PDO $db): void
         )
     ");
     $db->exec("CREATE INDEX IF NOT EXISTS shifts_member ON shifts(member_id, shift_date DESC)");
+    $db->exec("CREATE INDEX IF NOT EXISTS shifts_date ON shifts(shift_date)");
+
+    // Discord display names already matched to a roster record, so the nightly
+    // duty-channel import recognises "[Engineer] Augustus Kingsley" next time
+    // without anyone asking. Keyed on the lower-cased display name.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS aliases (
+            discord_name  TEXT PRIMARY KEY,
+            member_id     TEXT NOT NULL,
+            created_at    TEXT NOT NULL DEFAULT ''
+        )
+    ");
+
+    // One row per duty-channel import, so the office can see the nightly run
+    // happened and what it did.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS scrape_runs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            at          TEXT NOT NULL,
+            through     TEXT NOT NULL DEFAULT '',
+            posts       INTEGER NOT NULL DEFAULT 0,
+            inserted    INTEGER NOT NULL DEFAULT 0,
+            updated     INTEGER NOT NULL DEFAULT 0,
+            added       TEXT NOT NULL DEFAULT '',
+            held        TEXT NOT NULL DEFAULT '',
+            detail      TEXT NOT NULL DEFAULT ''
+        )
+    ");
 }
 
 /** Nothing is ever hard-deleted without a trace; every write lands here. */

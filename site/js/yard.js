@@ -73,7 +73,9 @@
     'train.repossessed': 'repossessed engines on a departure',
     'train.forfeited': 'took engines forfeited on a departure',
     'export': 'downloaded a data export',
-    'hours.import': 'loaded on-duty hours from Discord'
+    'hours.import': 'loaded on-duty hours from Discord',
+    'hours.correct': 'corrected a shift\'s hours',
+    'hours.alias': 'matched a Discord name to a roster record'
   };
 
   function plural(n, one, many) {
