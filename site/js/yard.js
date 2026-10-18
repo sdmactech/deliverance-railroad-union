@@ -75,7 +75,8 @@
     'export': 'downloaded a data export',
     'hours.import': 'loaded on-duty hours from Discord',
     'hours.correct': 'corrected a shift\'s hours',
-    'hours.alias': 'matched a Discord name to a roster record'
+    'hours.alias': 'matched a Discord name to a roster record',
+    'settings.update': 'changed a site setting'
   };
 
   function plural(n, one, many) {

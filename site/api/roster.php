@@ -36,10 +36,10 @@ if ($method === 'GET') {
                              WHERE status = 'active' GROUP BY owner_id") as $t) {
             $counts[$t['owner_id']] = (int)$t['c'];
         }
-        // Last on duty: the most recent shift on the books. Executives only
-        // (Mac, 2026-10-17) - withheld from everyone else at the API.
+        // Last on duty: the most recent shift on the books. One viewer only
+        // (canSeeLastDuty) - withheld from everyone else at the API.
         $lastDuty = [];
-        if (!empty($perms['manager'])) {
+        if (!empty($perms['canSeeLastDuty'])) {
             foreach ($db->query('SELECT member_id, MAX(shift_date) d, MAX(posted_at) p
                                  FROM shifts GROUP BY member_id') as $s) {
                 $lastDuty[$s['member_id']] = ['date' => $s['d'], 'postedAt' => $s['p']];
@@ -49,7 +49,7 @@ if ($method === 'GET') {
         foreach ($rows as $r) {
             $m = rr_member_public($r, $perms);
             $m['activeTrains'] = $counts[$r['id']] ?? 0;
-            if (!empty($perms['manager'])) {
+            if (!empty($perms['canSeeLastDuty'])) {
                 $m['lastOnDuty'] = $lastDuty[$r['id']]['date'] ?? '';
             }
             $out[] = $m;

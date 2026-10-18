@@ -82,13 +82,13 @@
     document.querySelectorAll('.note-col').forEach(function (el) {
       el.classList.toggle('hide', !show);
     });
-    // Last on duty is executives-only; the API only sends it to them.
+    // Last on duty is for one viewer; the API only sends it to them.
     document.querySelectorAll('.duty-col').forEach(function (el) {
-      el.classList.toggle('hide', !PERMS.manager);
+      el.classList.toggle('hide', !PERMS.canSeeLastDuty);
     });
   }
 
-  function cols() { return 6 + (PERMS.canSeeNotes ? 1 : 0) + (PERMS.manager ? 1 : 0); }
+  function cols() { return 6 + (PERMS.canSeeNotes ? 1 : 0) + (PERMS.canSeeLastDuty ? 1 : 0); }
 
   /** "2026-10-14" -> "Oct 14 · 3 days ago", against today's local date. */
   function lastDutyCell(d) {
@@ -163,7 +163,7 @@
         + '<td class="mono">' + (m.po ? RR.esc(m.po) : '<span class="muted">—</span>') + '</td>'
         + '<td class="num">' + (m.activeTrains || 0) + '</td>'
         + '<td>' + probationCell(m) + '</td>'
-        + (PERMS.manager ? '<td class="duty-col">' + lastDutyCell(m.lastOnDuty) + '</td>' : '')
+        + (PERMS.canSeeLastDuty ? '<td class="duty-col">' + lastDutyCell(m.lastOnDuty) + '</td>' : '')
         + (PERMS.canSeeNotes
             ? '<td class="muted note-col" style="max-width:220px">' + RR.esc(m.note || '') + '</td>'
             : '')

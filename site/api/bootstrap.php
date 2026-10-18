@@ -237,6 +237,10 @@ function rr_migrate(PDO $db): void
         )
     ");
 
+    // Site settings that belong to this install, not the code (the repo is
+    // public). key/value text.
+    $db->exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')");
+
     // One row per duty-channel import, so the office can see the nightly run
     // happened and what it did.
     $db->exec("
@@ -423,7 +427,7 @@ function rr_permissions(?array $viewer = null): array
         return ['signedIn' => false, 'member' => false, 'staff' => false,
                 'manager' => false, 'canEdit' => false, 'canHire' => false,
                 'canPromote' => false, 'maxGrade' => 0, 'canDelete' => false,
-                'canSeeNotes' => false, 'canYard' => false, 'canSeeHours' => false, 'canSeeDeparted' => false,
+                'canSeeNotes' => false, 'canYard' => false, 'canSeeHours' => false, 'canSeeDeparted' => false, 'canSeeLastDuty' => false,
                 'grade' => null, 'memberId' => null];
     }
     $roles   = $viewer['roles'] ?? [];
@@ -466,9 +470,25 @@ function rr_permissions(?array $viewer = null): array
         // eligibility before hiring someone back (Mac, 2026-10-14). Records
         // with a disciplinary ending stay executive-only to change.
         'canSeeDeparted' => $isStaff || $isExec,
+        // Last on duty is for ONE person: the roster record named in the
+        // settings table (owner_member_id), signed in on the Discord account
+        // linked to it (Mac, 2026-10-17). Nobody else, executives included.
+        'canSeeLastDuty' => $me !== null && rr_setting('owner_member_id') !== ''
+                            && $me['id'] === rr_setting('owner_member_id'),
         'grade'      => $grade,
         'memberId'   => $me['id'] ?? null,
     ];
+}
+
+function rr_setting(string $key): string
+{
+    static $cache = [];
+    if (!array_key_exists($key, $cache)) {
+        $st = rr_db()->prepare('SELECT value FROM settings WHERE key = ?');
+        $st->execute([$key]);
+        $cache[$key] = (string)($st->fetchColumn() ?: '');
+    }
+    return $cache[$key];
 }
 
 function rr_require_manager(): array
