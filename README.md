@@ -58,8 +58,8 @@ Discord decides **what you may do**. The roster decides **what rank you are**.
 | Discord role | Can |
 | --- | --- |
 | **Railroad Union** | the door — without it you are refused entry |
-| **Railway Operations** | hire onto the roster, edit records, promote up to grade 2, read the office note, and work the Yard Office |
-| **Railway Executives** | everything above, plus delete, merge, reassign, the `office` field, and any rank of 3+ |
+| **Railway Operations** | hire onto the roster, edit records, promote up to grade 2, read the office note and rehire flag, see on-duty hours and departed members, and work the Yard Office |
+| **Railway Executives** | everything above, plus delete, merge, reassign, the `office` field, any rank of 3+, and firing, terminating or banning (and changing those records) |
 
 A roster grade of 3 without the Railway Executives role gets **no** manager powers.
 Discord is the only thing that grants them.
@@ -69,9 +69,10 @@ Supervisor · `3` Railroad Superintendent · `4` Railroad Union President · `5`
 
 ## What it does
 
-- **Roster** — rank, status, PO box, probation dates, trainee, and an office-only note
+- **Roster** — rank, status, PO box, probation dates, trainee, an office-only note and rehire-eligible flag, and on-duty hours loaded from the Discord duty channel
 - **Statuses** — Probation, Hired, Government, LOA (with a start date), Quit, Fired,
-  Terminated, Banned, Released. Departures are hidden from everyone but executives.
+  Terminated, Banned, Released. Departures are hidden from general members; Operations
+  can read them, and only Executives can change a Fired, Terminated or Banned record.
 - **Train registration** — engines registered to members, sold back to the government,
   repossessed by the union, or forfeited when somebody leaves
 - **Claims** — members claim their own roster name; a manager approves it

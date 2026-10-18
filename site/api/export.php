@@ -42,7 +42,7 @@ if ($what === 'roster') {
             $m['id'], $m['first_name'], $m['last_name'],
             (int)$m['grade'], rr_grade_title((int)$m['grade']),
             $m['office'], $m['status'], $m['po'], $m['agency'], $m['trainee'],
-            $m['probation_date'], $m['can_train_after'], $m['loa_start'] ?? '', $m['note'],
+            $m['probation_date'], $m['can_train_after'], $m['loa_start'] ?? '', $m['note'], $m['rehire'] ?? '',
             $m['discord_name'], $m['discord_id'],
             $m['roles_checked_at'], $m['created_at'], $m['updated_at'],
         ];
@@ -51,7 +51,7 @@ if ($what === 'roster') {
     rr_send_csv("deliverance-roster-$day.csv", [
         'ID', 'First name', 'Last name', 'Grade', 'Rank title', 'Office',
         'Status', 'PO box', 'Agency', 'Trainee', 'On probation', 'Can train after', 'LOA since',
-        'Note', 'Discord name', 'Discord ID', 'Roles last read', 'Created', 'Updated',
+        'Note', 'Rehire eligible', 'Discord name', 'Discord ID', 'Roles last read', 'Created', 'Updated',
     ], $rows);
 }
 

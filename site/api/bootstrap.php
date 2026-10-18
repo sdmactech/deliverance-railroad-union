@@ -149,6 +149,11 @@ function rr_migrate(PDO $db): void
     if (!in_array('loa_start', $cols, true)) {
         $db->exec("ALTER TABLE members ADD COLUMN loa_start TEXT NOT NULL DEFAULT ''");
     }
+    // Rehire eligibility: 'yes', 'no', or '' for not decided. Office-only,
+    // like the note that carries the reason (Mac, 2026-10-14).
+    if (!in_array('rehire', $cols, true)) {
+        $db->exec("ALTER TABLE members ADD COLUMN rehire TEXT NOT NULL DEFAULT ''");
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS trains (
@@ -390,7 +395,7 @@ function rr_permissions(?array $viewer = null): array
         return ['signedIn' => false, 'member' => false, 'staff' => false,
                 'manager' => false, 'canEdit' => false, 'canHire' => false,
                 'canPromote' => false, 'maxGrade' => 0, 'canDelete' => false,
-                'canSeeNotes' => false, 'canYard' => false, 'canSeeHours' => false,
+                'canSeeNotes' => false, 'canYard' => false, 'canSeeHours' => false, 'canSeeDeparted' => false,
                 'grade' => null, 'memberId' => null];
     }
     $roles   = $viewer['roles'] ?? [];
@@ -428,6 +433,11 @@ function rr_permissions(?array $viewer = null): array
         // On-duty hours are office-only too (Mac, 2026-10-08). Withheld at the
         // API, the same way the note is.
         'canSeeHours' => $isStaff || $isExec,
+        // Departed members (Quit, Fired, Terminated, Banned) are visible to
+        // Operations as well as Executives, so staff can check rehire
+        // eligibility before hiring someone back (Mac, 2026-10-14). Records
+        // with a disciplinary ending stay executive-only to change.
+        'canSeeDeparted' => $isStaff || $isExec,
         'grade'      => $grade,
         'memberId'   => $me['id'] ?? null,
     ];
@@ -556,6 +566,7 @@ function rr_member_public(array $r, ?array $perms = null): array
         'loaStart'       => $r['loa_start'] ?? '',
         'canTrainAfter'  => $r['can_train_after'],
         'note'           => $seesNotes ? $r['note'] : '',
+        'rehire'         => $seesNotes ? (string)($r['rehire'] ?? '') : '',
         'notesVisible'   => $seesNotes,
         'discordName'    => $r['discord_name'],
         'linked'         => ($r['discord_id'] ?? '') !== '',

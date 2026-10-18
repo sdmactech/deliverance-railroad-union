@@ -23,7 +23,7 @@ if ($method === 'GET') {
         // page, so a non-executive is never sent the row at all.
         $sql  = 'SELECT * FROM members';
         $args = [];
-        if (empty($perms['manager'])) {
+        if (empty($perms['canSeeDeparted'])) {
             $sql .= ' WHERE status NOT IN (' . implode(',', array_fill(0, count(RR_PRIVATE_STATUSES), '?')) . ')';
             $args = RR_PRIVATE_STATUSES;
         }
@@ -254,6 +254,11 @@ if ($action === 'update') {
         && in_array((string)$in['status'], RR_DISCIPLINARY_STATUSES, true)) {
         rr_fail('Only Railway Executives can fire, terminate or ban somebody.', 403);
     }
+    // A Fired, Terminated or Banned record is the executive's to change -
+    // including hiring that person back. Operations can read it, not edit it.
+    if (!$isMgr && in_array((string)$before['status'], RR_DISCIPLINARY_STATUSES, true)) {
+        rr_fail('Only Railway Executives can change a record that is Fired, Terminated or Banned.', 403);
+    }
     // Staff may maintain an executive's record, but not their rank or standing.
     if (($wantsGrade || $wantsStatus) && !$isMgr && (int)$before['grade'] > $cap) {
         rr_fail('Only Railway Executives can change an executive\'s rank or status.', 403);
@@ -274,6 +279,9 @@ if ($action === 'update') {
         // editor without the Operations role would blank it unseen.
         'note'            => (array_key_exists('note', $in) && !empty($perms['canSeeNotes']))
                               ? rr_str($in['note'], 500) : $before['note'],
+        'rehire'          => (array_key_exists('rehire', $in) && !empty($perms['canSeeNotes'])
+                              && in_array((string)$in['rehire'], ['yes', 'no', ''], true))
+                              ? (string)$in['rehire'] : (string)($before['rehire'] ?? ''),
         'first_name'      => array_key_exists('firstName', $in) ? rr_str($in['firstName'], 60) : $before['first_name'],
         'last_name'       => array_key_exists('lastName', $in)  ? rr_str($in['lastName'], 60)  : $before['last_name'],
         'probation_date'  => array_key_exists('probationDate', $in)
@@ -297,7 +305,7 @@ if ($action === 'update') {
         first_name=:first_name, last_name=:last_name, grade=:grade, status=:status,
         office=:office, agency=:agency, po=:po, trainee=:trainee,
         probation_date=:probation_date, can_train_after=:can_train_after,
-        loa_start=:loa_start, note=:note, updated_at=:updated_at WHERE id=:id');
+        loa_start=:loa_start, note=:note, rehire=:rehire, updated_at=:updated_at WHERE id=:id');
     $fields['updated_at'] = rr_now();
     $fields['id'] = $id;
     $st->execute($fields);
@@ -358,7 +366,7 @@ if ($action === 'merge') {
     try {
         // Fill only the gaps in the surviving record; never overwrite it.
         $fill = ['first_name', 'last_name', 'office', 'agency', 'po', 'trainee',
-                 'probation_date', 'can_train_after', 'loa_start', 'note'];
+                 'probation_date', 'can_train_after', 'loa_start', 'note', 'rehire'];
         $merged = [];
         foreach ($fill as $f) {
             if (trim((string)$keep[$f]) === '' && trim((string)$merge[$f]) !== '') {

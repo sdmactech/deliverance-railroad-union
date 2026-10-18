@@ -32,6 +32,14 @@
   // Everyone whose time with the union has ended. Non-executives are never
   // sent the disciplinary ones at all, so for them this is just 'Released'.
   const DEPARTED = ['Quit', 'Fired', 'Terminated', 'Banned', 'Released'];
+  const DISCIPLINARY = ['Fired', 'Terminated', 'Banned'];
+
+  /** Office-only rehire flag, shown as a badge. '' means not decided. */
+  function rehireBadge(v) {
+    if (v === 'yes') return '<span class="badge rehire-yes">Rehire: Yes</span>';
+    if (v === 'no')  return '<span class="badge rehire-no">Rehire: No</span>';
+    return '';
+  }
   function departed(m) { return DEPARTED.indexOf(m.status) !== -1; }
 
   function renderTiles() {
@@ -123,6 +131,7 @@
       const extras = [];
       if (m.office) extras.push('<span class="badge office">' + RR.esc(m.office) + '</span>');
       if (m.agency) extras.push('<span class="badge ghost">' + RR.esc(m.agency) + '</span>');
+      if (m.rehire && departed(m)) extras.push(rehireBadge(m.rehire));
       return '<tr class="row-click" data-id="' + RR.esc(m.id) + '">'
         + '<td class="name-cell"><strong>' + RR.esc(m.name) + '</strong>'
         +   '<span>' + (m.linked ? RR.esc(m.discordName) : '<em>not linked</em>') + '</span>'
@@ -163,7 +172,10 @@
   }
 
   function statusOptions(selected) {
-    return STATUSES.map(function (v) {
+    // Operations are not offered the disciplinary endings, but a record that
+    // already carries one must still show it.
+    const list = selected && STATUSES.indexOf(selected) === -1 ? STATUSES.concat([selected]) : STATUSES;
+    return list.map(function (v) {
       return '<option value="' + RR.esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + RR.esc(v) + '</option>';
     }).join('');
   }
@@ -217,10 +229,13 @@
     const m = MEMBERS.find(function (x) { return x.id === id; });
     if (!m) return;
 
-    const canEdit = PERMS.canEdit;
     const isMgr   = PERMS.manager;
+    // Fired, Terminated and Banned records are the executive's to change,
+    // rehiring included. Operations can read them.
+    const locked  = !isMgr && DISCIPLINARY.indexOf(m.status) !== -1;
+    const canEdit = PERMS.canEdit && !locked;
     // Operations staff promote and set status, but not on an executive record.
-    const canRank = PERMS.canPromote && (isMgr || m.grade <= PERMS.maxGrade);
+    const canRank = PERMS.canPromote && !locked && (isMgr || m.grade <= PERMS.maxGrade);
 
     let trains = [];
     let hours = null;
@@ -243,7 +258,10 @@
     const readOnly = canEdit ? '' : ' disabled';
 
     const body =
-      '<div class="field-row">'
+      (locked
+        ? '<p class="notice">' + RR.esc(m.status) + ' &mdash; only Railway Executives can change this record, including hiring them back.</p>'
+        : '')
+      + '<div class="field-row">'
       + '<label class="field"><span>First name</span><input id="fFirst" value="' + RR.esc(m.firstName) + '"' + readOnly + '></label>'
       + '<label class="field"><span>Last name</span><input id="fLast" value="' + RR.esc(m.lastName) + '"' + readOnly + '></label>'
       + '</div>'
@@ -266,7 +284,12 @@
       + '<label class="field"><span>Office (outside the ladder)</span><input id="fOffice" value="' + RR.esc(m.office) + '" placeholder="Governor, Founder&hellip;"' + (isMgr ? '' : ' disabled') + '></label>'
       + '<label class="field"><span>Trainee</span><input id="fTrainee" value="' + RR.esc(m.trainee) + '"' + readOnly + '></label>'
       + (PERMS.canSeeNotes
-          ? '<label class="field"><span>Note</span><textarea id="fNote"' + readOnly + '>'
+          ? '<label class="field"><span>Rehire eligible</span><select id="fRehire"' + readOnly + '>'
+            + [['', 'Not decided'], ['yes', 'Yes - can be rehired'], ['no', 'No - do not rehire']].map(function (o) {
+                return '<option value="' + o[0] + '"' + ((m.rehire || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+              }).join('')
+            + '</select></label>'
+            + '<label class="field"><span>Note</span><textarea id="fNote"' + readOnly + ' placeholder="Why they left, and whether they can come back&hellip;">'
             + RR.esc(m.note) + '</textarea></label>'
           : '')
       + '<h3 style="margin-top:14px">Trains</h3>' + trainHtml
@@ -342,7 +365,8 @@
           probationDate: dlg.querySelector('#fProb').value,
           canTrainAfter: dlg.querySelector('#fAfter').value,
           loaStart:  dlg.querySelector('#fLoa') ? dlg.querySelector('#fLoa').value : '',
-          note:      PERMS.canSeeNotes ? dlg.querySelector('#fNote').value : undefined
+          note:      PERMS.canSeeNotes ? dlg.querySelector('#fNote').value : undefined,
+          rehire:    PERMS.canSeeNotes ? dlg.querySelector('#fRehire').value : undefined
         });
         dlg.close();
         // Say so out loud when a status change took somebody's engines.

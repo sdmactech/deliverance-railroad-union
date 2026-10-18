@@ -435,3 +435,7 @@ table.rr.hours tr.shift-post td { background: var(--panel-2); font-size: .82rem;
   table.rr.hours th:nth-child(4), table.rr.hours tr.shift-row td:nth-child(4) { display: none; }
   table.rr.hours td, table.rr.hours th { padding: 7px 6px; }
 }
+
+/* ---- Rehire eligibility (office-only) ---- */
+.badge.rehire-yes { background: var(--green-bg); color: var(--green); border-color: #2f4a31; }
+.badge.rehire-no  { background: var(--red-bg); color: var(--red); border-color: #4d2a22; }
