@@ -2,7 +2,8 @@
 // every scroll; it accumulates posts in window.__rr. __rrTSV(sinceIso) builds
 // the TSV (id, ts, author, role, text) for posts at/after sinceIso and returns
 // [rows, chars, hash]. Discord time codes get " PT" appended (they render in
-// this Mac's zone). Quoted reply text is excluded.
+// this Mac's zone). Quoted reply text and invisible characters are removed;
+// posts with no digits are left out.
 window.__rr = window.__rr || {};
 window.__rrHarvest = function () {
   document.querySelectorAll('li[id^="chat-messages-"]').forEach(function (li) {
@@ -16,7 +17,8 @@ window.__rrHarvest = function () {
       const k = c.cloneNode(true);
       k.querySelectorAll('[class*="timestamp"]').forEach(function (s) { s.textContent = s.textContent + ' PT'; });
       k.querySelectorAll('time').forEach(function (s) { s.remove(); });  // "(edited)" stamp
-      text = k.innerText.replace(/\s*\(edited\)/g, '').replace(/\s*\n\s*/g, ' / ').replace(/[\t]/g, ' ').trim();
+      text = k.innerText.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '')
+        .replace(/\s*\(edited\)/g, '').replace(/\s*\n\s*/g, ' / ').replace(/[\t]/g, ' ').trim();
     }
     const p = window.__rr[id] || {};
     window.__rr[id] = {
@@ -38,6 +40,9 @@ window.__rrTSV = function (sinceIso) {
     const m = window.__rr[id];
     if (m.author) { last = m.author; lastRole = m.role || ''; }
     if (!m.ts || m.ts < sinceIso) return;
+    // Only posts that could hold a time: announcements and chatter are not
+    // shifts, and the importer would skip them anyway.
+    if (!/\d/.test(m.text || '')) return;
     rows.push([id, m.ts, m.author || last, m.role || lastRole, m.text || ''].join('\t'));
   });
   const s = rows.join('\n');
