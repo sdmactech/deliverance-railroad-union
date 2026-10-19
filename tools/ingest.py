@@ -126,13 +126,27 @@ def main():
     members = {m['id']: m for m in snap['members']}
     by_name = {norm(m['first_name'] + ' ' + m['last_name']): m['id'] for m in snap['members']}
     alias = {a['discord_name']: a['member_id'] for a in snap['aliases']}
-    for s in snap['shifts']:                         # names matched in earlier loads
-        alias.setdefault(s['discord_name'].lower(), s['member_id'])
+    # Names matched in earlier loads - but only where the display name could
+    # be that member. A shift posted on someone else's behalf ("Posting for
+    # Augustus Kingsley" by Mercy Thorne) must not teach "Mercy Thorne ->
+    # Augustus Kingsley"; it did once (2026-10-19).
+    seen = {}
+    for s in snap['shifts']:
+        seen.setdefault(s['discord_name'].lower(), set()).add(s['member_id'])
+    for name, mids in seen.items():
+        if name in alias or len(mids) != 1:
+            continue
+        mid = next(iter(mids))
+        m = members.get(mid)
+        if m and any(norm(m['last_name']) and norm(m['last_name']) in norm(c) for c in candidates(name)):
+            alias[name] = mid
 
     new, new_alias, held, notes, out = {}, {}, [], [], []
 
     def match(author, role):
         key = author.lower()
+        if norm(author) in by_name:                   # the poster's own roster name wins
+            return by_name[norm(author)]
         if key in alias and alias[key] in members:
             return alias[key]
         for c in candidates(author):

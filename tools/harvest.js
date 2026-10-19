@@ -15,8 +15,17 @@ window.__rrHarvest = function () {
     let text = null;
     if (c) {
       const k = c.cloneNode(true);
+      // The "(edited)" marker is ALSO a "timestamp" span, and its hidden text
+      // is the edit time ("Saturday, October 17, 2026 at 5:20 PM"). Read as
+      // part of the post it becomes a fake time out. Remove it first.
+      k.querySelectorAll('[class*="edited"]').forEach(function (e) {
+        const wrap = e.closest('[class*="timestamp"]');
+        (wrap && k.contains(wrap) ? wrap : e).remove();
+      });
+      k.querySelectorAll('time').forEach(function (s) { s.remove(); });
+      // What is left in a "timestamp" span is a Discord time code, rendered
+      // in this Mac's zone.
       k.querySelectorAll('[class*="timestamp"]').forEach(function (s) { s.textContent = s.textContent + ' PT'; });
-      k.querySelectorAll('time').forEach(function (s) { s.remove(); });  // "(edited)" stamp
       text = k.innerText.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '')
         .replace(/\s*\(edited\)/g, '').replace(/\s*\n\s*/g, ' / ').replace(/[\t]/g, ' ').trim();
     }
@@ -43,6 +52,9 @@ window.__rrTSV = function (sinceIso) {
     // Only posts that could hold a time: announcements and chatter are not
     // shifts, and the importer would skip them anyway.
     if (!/\d/.test(m.text || '')) return;
+    // Instructions that show the time-code format ("<t:1792283283:T>",
+    // "paste code here") are not shifts.
+    if (/<t:\d+|paste code/i.test(m.text || '')) return;
     rows.push([id, m.ts, m.author || last, m.role || lastRole, m.text || ''].join('\t'));
   });
   const s = rows.join('\n');
