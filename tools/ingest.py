@@ -41,7 +41,7 @@ TZMAP = {'EST': 'America/New_York', 'EDT': 'America/New_York', 'ET': 'America/Ne
 TZ_RE = re.compile(r'\b(EEST|AEST|CEST|BST|GMT|CET|EST|EDT|CST|CDT|MST|PST|PDT|ET|CT|MT|PT)\b', re.I)
 TOK = re.compile(r'(?<!\d)(?:(\d{1,2})\s*[:.;]\s*(\d{2})(?::\d{2})?|(\d{1,2})(\d{2})|(\d{1,2}) (\d{2})'
                  r'(?=\s*(?:am|pm|a\.m|p\.m|et|est|cst|pst)\b)|(\d{1,2}))(?!\d)\s*(a\.?m|p\.?m)?', re.I)
-TITLES = re.compile(r'^(loa\s*-\s*|marshal|undersheriff|sheriff|deputy|dr\.?|chief|judge|captain)\s+', re.I)
+TITLES = re.compile(r'^(loa\s*-\s*|loa|marshal|undersheriff|sheriff|deputy|dr\.?|chief|judge|captain)\s+', re.I)
 
 
 def php(script, env=''):
@@ -71,6 +71,7 @@ def candidates(display):
 
 def tokens(text):
     s = re.sub(r'\d{1,2}/\d{1,2}(/\d{2,4})?,?', ' ', text)
+    s = re.sub(r'(?i)\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d{1,2},? \d{4}( at)?', ' ', s)  # "October 28, 2026 at 5:35 PM"
     s = re.sub(r'(?i)(\d)(am|pm)ct', r'\1\2 ct', s)
     out = []
     for m in TOK.finditer(s):
