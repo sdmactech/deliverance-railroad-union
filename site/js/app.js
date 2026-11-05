@@ -51,6 +51,8 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'toast';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
       document.body.appendChild(el);
     }
     el.textContent = message;
@@ -123,6 +125,11 @@
       links.push({ href: 'report.html', label: 'Daily Report', key: 'report' });
     }
     if (p.canYard) {
+      // Rail Yard (v2): new trains and trains that need somebody to act.
+      links.push({
+        href: 'railyard.html', label: 'Rail Yard', key: 'railyard',
+        badge: Number(RR.me.yardAttention || 0), badgeWhat: 'train'
+      });
       links.push({
         href: 'yard.html', label: 'Yard Office', key: 'yard',
         badge: Number(RR.me.pendingClaims || 0)
@@ -144,10 +151,11 @@
       + '</a>'
       + '<nav class="rail-nav">' + links.map(function (l) {
           const cls = [l.key === current ? 'current' : '', l.badge ? 'flagged' : ''].filter(Boolean);
-          return '<a href="' + l.href + '"' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
+          return '<a href="' + l.href + '"' + (cls.length ? ' class="' + cls.join(' ') + '"' : '')
+               + (l.key === current ? ' aria-current="page"' : '') + '>'
                + esc(l.label)
                + (l.badge
-                   ? '<span class="nav-badge" title="' + l.badge + ' claim'
+                   ? '<span class="nav-badge" title="' + l.badge + ' ' + (l.badgeWhat || 'claim')
                      + (l.badge === 1 ? '' : 's') + ' waiting on the office">' + l.badge + '</span>'
                    : '')
                + '</a>';
@@ -253,6 +261,82 @@
       dlg.addEventListener('close', function () { if (!done) resolve(false); });
     });
   }
+
+  // -------------------------------------------------------------- motion ---
+  // v2 page motion: the header firms up once you leave the hero, the hero
+  // headline arrives word by word, and anything marked .rv rises in once as
+  // it enters the viewport. All of it is CSS-driven and off under
+  // prefers-reduced-motion.
+
+  function initMotion() {
+    const top = document.getElementById('railTop');
+    const onScroll = function () { if (top) top.classList.toggle('scrolled', window.scrollY > 40); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    document.querySelectorAll('.reveal-words').forEach(function (el) {
+      if (el.dataset.split) return;
+      el.dataset.split = '1';
+      const words = el.textContent.trim().split(/\s+/);
+      el.innerHTML = words.map(function (w, i) {
+        return '<span class="w" aria-hidden="true"><span style="--i:' + i + '">' + esc(w) + '</span></span>';
+      }).join(' ');
+      el.setAttribute('aria-label', words.join(' '));
+    });
+
+    RR.reveal(document);
+    prepTables(document);
+    new MutationObserver(function () { prepTables(document); })
+      .observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Tables: on phones each row becomes a stacked card labelled from the
+  // header, and rows that open something are reachable by keyboard.
+  function prepTables(root) {
+    root.querySelectorAll('table.rr').forEach(function (t) {
+      const heads = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) {
+        return th.textContent.replace(/\u00a0/g, ' ').trim();
+      });
+      if (heads.length) t.classList.add('cards');
+      t.querySelectorAll('tbody tr').forEach(function (tr) {
+        if (tr.dataset.prepped) return;
+        tr.dataset.prepped = '1';
+        let col = 0;
+        Array.prototype.forEach.call(tr.children, function (td) {
+          if (!td.hasAttribute('data-label')) td.setAttribute('data-label', heads[col] || '');
+          col += Number(td.getAttribute('colspan') || 1);
+        });
+        if (tr.classList.contains('row-click') || tr.classList.contains('shift-row')) {
+          tr.tabIndex = 0;
+          tr.setAttribute('role', 'button');
+        }
+      });
+    });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    const tr = e.target && e.target.closest && e.target.closest('tr[role="button"]');
+    if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tr.click(); }
+  });
+
+  const revealIO = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add('in'); revealIO.unobserve(en.target); }
+        });
+      }, { rootMargin: '0px 0px -8% 0px' })
+    : null;
+
+  /** Watch every .rv under root that is not yet showing. Safe to call again. */
+  RR.reveal = function (root) {
+    (root || document).querySelectorAll('.rv:not(.in)').forEach(function (el, i) {
+      if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', String(i % 8));
+      if (revealIO) revealIO.observe(el); else el.classList.add('in');
+    });
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMotion);
+  else initMotion();
 
   // --------------------------------------------------------------- boot ---
 

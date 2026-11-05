@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<script>document.documentElement.classList.add('js')</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f19" />
+<title>Rail Yard · Deliverance Railroad Union</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/emblem-64.png" sizes="64x64" type="image/png" />
+<link rel="apple-touch-icon" href="assets/emblem.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=v2d" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the yard</a>
+  <header class="rail-top" id="railTop"></header>
+  <section class="hero compact" data-cam="railyard" aria-label="Rail Yard">
+    <div class="hero-title" aria-hidden="true"><span>Rail Yard</span></div>
+    <img class="hero-still" src="assets/3d/loco-hero.png" alt="" />
+    <div class="hero-copy">
+      <p class="kicker">Operations &amp; Executives</p>
+      <h1 class="reveal-words">What is on the rails tonight</h1>
+      <p class="sub">New engines on the register, trains somebody has to go and take back, and this week's top drivers.</p>
+      <div class="hero-actions"></div>
+    </div>
+  </section>
+  <main class="page" id="main">
+    <section class="card board rv"><div class="tiles" id="fleetTiles"></div></section>
+
+    <div class="yard-grid">
+      <div>
+        <h2 class="section-label rv"><b>Needs attention</b><span id="attnLine">&nbsp;</span></h2>
+        <section class="card rv"><ul class="signal-list" id="attention"><li class="empty">Loading&hellip;</li></ul></section>
+      </div>
+      <div>
+        <h2 class="section-label rv"><b>Top 10 drivers</b><span id="weekLine">&nbsp;</span></h2>
+        <section class="card rv" id="topCard">
+          <div class="card-head"><div class="grow"><h2 id="weekTitle">&nbsp;</h2></div>
+            <div class="week-tabs" id="weekTabs"></div></div>
+          <ol class="leader" id="leader"></ol>
+          <p class="week-foot" id="weekFoot"></p>
+        </section>
+      </div>
+    </div>
+
+    <h2 class="section-label rv"><b>New arrivals</b><span>Registered in the last 30 days</span></h2>
+    <div class="arrivals" id="arrivals"></div>
+  </main>
+
+<script src="js/app.js?v=v2d"></script>
+<script src="js/railyard.js?v=v2d"></script>
+<script type="module" src="js/hero3d.js?v=v2d"></script>
+</body>
+</html>

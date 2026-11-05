@@ -83,8 +83,30 @@ Supervisor · `3` Railroad Superintendent · `4` Railroad Union President · `5`
 - **Two layouts per page** — what you see depends on what you may see, and the API
   withholds the rest rather than hiding it in the page
 - **Nightly backups** — `VACUUM INTO`, integrity-checked, 30 days, off-NAS copy
+- **Daily Report**: on-duty hours by day, week or month and each driver's share,
+  for Operations and Executives. Office staff land here when they sign in.
+- **Rail Yard**: new engines on the register, a repossession queue (when a member
+  quits or is fired the site marks their engines, and the office presses *Taken back
+  in game* once the train is actually back), owners who left with a train still
+  active, and the weekly Top 10 drivers. A badge on the tab counts what needs acting on.
 
-## Screenshots
+## v2: "The Night Line"
+
+A full redesign, November 2026 (v1 is tagged `v1`).
+
+- A 4-4-0 locomotive built in Blender (`models/build_loco.py`, procedural geometry,
+  generated weathering textures, AO baked into vertex colours) runs through the night
+  in every page's hero with Three.js (`site/js/hero3d.js`): turning drivers and rods,
+  steam, a headlamp beam, passing telegraph poles. Two liveries, green and black.
+  Meshopt + WebP compressed, about 600 KB gzipped.
+- Office content is printed on ledger paper over the dark: oklch tokens, Alfa Slab One
+  and Inter, rubber-stamp badges, word-by-word headlines, view transitions.
+- Phones get a light 3D tier and tables as stacked cards; reduced motion and data
+  saver get a rendered still instead of WebGL.
+
+<img src="docs/screenshots/v2-login.png" alt="v2 sign-in page" width="880">
+
+## Screenshots (v1)
 
 | | |
 | --- | --- |

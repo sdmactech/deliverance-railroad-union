@@ -70,6 +70,8 @@
     // showed the bare action name, which looked broken.
     'member.merge': 'merged two roster records',
     'train.repossess': 'repossessed a train',
+    'train.taken_back': 'took a train back in game',
+    'train.taken_back_undo': 'undid a train taken back',
     'train.repossessed': 'repossessed engines on a departure',
     'train.forfeited': 'took engines forfeited on a departure',
     'export': 'downloaded a data export',

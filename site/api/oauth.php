@@ -207,7 +207,11 @@ if ($action === 'callback') {
     }
 
     rr_log_event('signin', (string)($me['id'] ?? ''), $roles);
-    rr_bounce('index.html');
+    // Land on the Daily Report (Mac, 2026-11-04). It is office-only, so a
+    // member without Operations or Executives goes to the Roster instead of a
+    // locked page.
+    $office = !empty($roles['operations']) || !empty($roles['executives']);
+    rr_bounce($office ? 'report.html' : 'index.html');
 }
 
 rr_fail('Unknown action.', 400);

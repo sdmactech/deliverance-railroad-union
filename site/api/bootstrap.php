@@ -171,6 +171,15 @@ function rr_migrate(PDO $db): void
             removed_by     TEXT NOT NULL DEFAULT ''
         )
     ");
+    // Rail Yard (v2): the site flips a departed member's engines to forfeited or
+    // repossessed, but somebody still has to take the train back IN GAME. These
+    // record that it was done, and by whom (Mac, 2026-11-04).
+    $tcols = [];
+    foreach ($db->query('PRAGMA table_info(trains)') as $c) $tcols[] = $c['name'];
+    if (!in_array('taken_back_at', $tcols, true)) {
+        $db->exec("ALTER TABLE trains ADD COLUMN taken_back_at TEXT NOT NULL DEFAULT ''");
+        $db->exec("ALTER TABLE trains ADD COLUMN taken_back_by TEXT NOT NULL DEFAULT ''");
+    }
     $db->exec("CREATE INDEX IF NOT EXISTS trains_owner ON trains(owner_id)");
     // One ACTIVE registration per train name. Sold or removed names free up.
     $db->exec("CREATE UNIQUE INDEX IF NOT EXISTS trains_active_name

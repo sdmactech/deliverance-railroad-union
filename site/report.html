@@ -2,28 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Daily Report — Deliverance Railroad Union</title>
+<script>document.documentElement.classList.add('js')</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f19" />
+<title>Daily Report · Deliverance Railroad Union</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="assets/emblem-64.png" sizes="64x64" type="image/png" />
 <link rel="apple-touch-icon" href="assets/emblem.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Inter:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=20261017c" />
+<link rel="stylesheet" href="css/styles.css?v=v2d" />
 </head>
 <body>
+  <a class="skip" href="#main">Skip to the report</a>
   <header class="rail-top" id="railTop"></header>
-
-  <main class="page">
-    <div class="page-head band" style="--band:url('/assets/band-yard.jpg')">
-      <div class="grow">
-        <p class="kicker">Operations &amp; Executives</p>
-        <h1>Daily Report</h1>
-        <p class="sub">Hours on duty, by day, and each driver's share of the day.</p>
-      </div>
+  <section class="hero compact" data-cam="report" data-model="assets/3d/loco-black.glb" aria-label="Hours">
+    <div class="hero-title" aria-hidden="true"><span>Hours</span></div>
+    <img class="hero-still" src="assets/3d/loco-hero-black.png" alt="" />
+    <div class="hero-copy">
+      <p class="kicker">Operations &amp; Executives</p>
+      <h1 class="reveal-words">Who kept the fires lit</h1>
+      <p class="sub">Hours on duty by day, and each driver's share of the day, from #railroad-duty-channel.</p>
+      <div class="hero-actions"></div>
     </div>
-
-    <section class="card">
+  </section>
+  <main class="page" id="main">
+    <section class="card rv">
       <div class="card-head"><div class="grow">
         <h2>Hours by day</h2>
         <p id="drSource">From #railroad-duty-channel.</p>
@@ -44,13 +49,13 @@
       <div class="dr-grid" id="drGrid"></div>
     </section>
 
-    <section class="card">
+    <section class="card rv">
       <div id="drPanel"><p class="muted">Loading&hellip;</p></div>
     </section>
   </main>
 
-<script src="js/app.js?v=20261017b"></script>
-<script src="js/trains.js?v=20260923o"></script>
-<script src="js/report.js?v=20261017b"></script>
+<script src="js/app.js?v=v2d"></script>
+<script src="js/report.js?v=v2d"></script>
+<script type="module" src="js/hero3d.js?v=v2d"></script>
 </body>
 </html>

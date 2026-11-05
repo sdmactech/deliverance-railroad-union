@@ -10,3 +10,9 @@ backups/
 .DS_Store
 _shot*.html
 _shotdata.js
+*.blend
+*.blend1
+models/reference/
+models/textures/
+models/loco-raw.glb
+models/loco-black.glb

@@ -57,12 +57,25 @@ if (!empty($perms['canYard'])) {
     $pending = (int)$c->fetchColumn();
 }
 
+// Rail Yard badge: trains somebody has to act on. A forfeited or repossessed
+// engine not yet taken back in game, or an active one whose owner has left.
+$yardAttention = 0;
+if (!empty($perms['canYard'])) {
+    $yardAttention = (int)rr_db()->query("
+        SELECT COUNT(*) FROM trains t LEFT JOIN members m ON m.id = t.owner_id
+        WHERE (t.status IN ('forfeited','repossessed') AND t.taken_back_at = '')
+           OR (t.status = 'active' AND m.status IN ('Quit','Fired','Terminated','Banned','Released'))
+           OR (t.status = 'active' AND m.id IS NULL)
+    ")->fetchColumn();
+}
+
 rr_json([
     'ok' => true,
     'signedIn' => true,
     'authConfigured' => $configured,
     'siteName' => rr_cfg('site_name'),
     'pendingClaims' => $pending,
+    'yardAttention' => $yardAttention,
     'viewer' => [
         'discordId' => $viewer['discordId'],
         'name'      => $viewer['name'],
