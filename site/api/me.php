@@ -57,8 +57,8 @@ if (!empty($perms['canYard'])) {
     $pending = (int)$c->fetchColumn();
 }
 
-// Rail Yard badge: trains somebody has to act on. A forfeited or repossessed
-// engine not yet taken back in game, or an active one whose owner has left.
+// Rail Yard badge: trains and overdue suspensions somebody has to act on.
+// Includes engines not yet taken back, departed owners and missing owners.
 $yardAttention = 0;
 if (!empty($perms['canYard'])) {
     $yardAttention = (int)rr_db()->query("
@@ -67,6 +67,10 @@ if (!empty($perms['canYard'])) {
            OR (t.status = 'active' AND m.status IN ('Quit','Fired','Terminated','Banned','Released'))
            OR (t.status = 'active' AND m.id IS NULL)
     ")->fetchColumn();
+    $over = rr_db()->prepare("SELECT COUNT(*) FROM members
+        WHERE status = 'Suspended' AND suspended_until != '' AND suspended_until < ?");
+    $over->execute([rr_now_date()]);
+    $yardAttention += (int)$over->fetchColumn();
 }
 
 rr_json([

@@ -38,6 +38,15 @@ $n = function ($t) use ($db) { return (int)$db->query("SELECT COUNT(*) FROM $t")
 printf("members=%d trains=%d claims=%d events=%d", $n("members"), $n("trains"), $n("claims"), $n("events"));
 ' "$FILE") || { log "FAIL: copy failed integrity check"; rm -f "$FILE"; exit 1; }
 
+FILES=0
+if [ -d /data/uploads ]; then
+  ARCHIVE="$DEST/uploads-$DAY.tar.gz"
+  tar -czf "$ARCHIVE" -C /data uploads || { log "FAIL: could not write $ARCHIVE"; exit 1; }
+  tar -tzf "$ARCHIVE" >/dev/null || { log "FAIL: uploads archive failed verification"; exit 1; }
+  FILES=$(find /data/uploads -type f | wc -l | tr -d ' ')
+fi
+COUNTS="$COUNTS files=$FILES"
+
 gzip -f "$FILE"
 SIZE=$(du -h "$FILE.gz" | cut -f1)
 printf 'verified %s integrity=ok %s\n' "$(date -u +%FT%TZ)" "$COUNTS" > "$DEST/.verified"

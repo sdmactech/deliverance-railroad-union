@@ -16,6 +16,17 @@
     render();
   }
 
+  function today() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function suspensionDates(m) {
+    return 'since ' + RR.esc(RR.fmtDate(m.suspendedFrom))
+      + (m.suspendedUntil ? '<br><span class="' + (m.suspendedUntil < today() ? 'suspension-over' : '') + '">'
+        + (m.suspendedUntil < today() ? 'ended ' : 'until ') + RR.esc(RR.fmtDate(m.suspendedUntil)) + '</span>' : '');
+  }
+
   function fillFilters() {
     const g = $('gradeFilter');
     if (g.options.length > 1) return;
@@ -63,6 +74,7 @@
       ['Not yet linked', unlinked, 'No Discord account claimed']
     ];
     if (n('LOA')) tiles.push(['On leave', n('LOA'), 'Away, still on the books']);
+    if (n('Suspended')) tiles.push(['Suspended', n('Suspended'), 'Off duty, still on the books']);
     if (PERMS.manager && gone) {
       tiles.push(['Departed', gone, 'Hidden from everyone but executives']);
     }
@@ -159,6 +171,7 @@
         +   (m.status === 'LOA' && m.loaStart
               ? '<br><span class="muted" style="font-size:.74rem">since '
                 + RR.esc(RR.fmtDate(m.loaStart)) + '</span>' : '')
+        + (m.status === 'Suspended' ? '<br><span class="muted suspension-dates">' + suspensionDates(m) + '</span>' : '')
         + '</td>'
         + '<td class="mono">' + (m.po ? RR.esc(m.po) : '<span class="muted">—</span>') + '</td>'
         + '<td class="num">' + (m.activeTrains || 0) + '</td>'
@@ -189,11 +202,13 @@
     }).join('');
   }
 
-  function statusOptions(selected) {
+  function statusOptions(selected, adding) {
     // Operations are not offered the disciplinary endings, but a record that
     // already carries one must still show it.
     const list = selected && STATUSES.indexOf(selected) === -1 ? STATUSES.concat([selected]) : STATUSES;
-    return list.map(function (v) {
+    return list.filter(function (v) {
+      return v !== 'Suspended' || (!adding && (PERMS.canSeeNotes || selected === 'Suspended'));
+    }).map(function (v) {
       return '<option value="' + RR.esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + RR.esc(v) + '</option>';
     }).join('');
   }
@@ -243,6 +258,83 @@
       + RR.esc(RR.fmtDateTime(h.coveredThrough)) + '. Times are as the driver posted them. Tap a shift to see the post.</p>';
   }
 
+  // Large pictures are resized before they go into the office record.
+  async function suspensionFile(file) {
+    if (!file.type.startsWith('image/') || file.size <= 1.5 * 1024 * 1024) return file;
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      await new Promise(function (resolve, reject) {
+        img.onload = resolve;
+        img.onerror = function () { reject(new Error('Could not read ' + file.name + '.')); };
+        img.src = url;
+      });
+      const scale = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, 'image/jpeg', 0.85); });
+      if (!blob) throw new Error('Could not resize ' + file.name + '.');
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  async function loadSuspensions(root, member) {
+    try {
+      const data = await RR.api('api/suspension.php?member=' + encodeURIComponent(member.id));
+      root.classList.toggle('hide', !data.suspensions.length && member.status !== 'Suspended');
+      root.innerHTML = '<h3>Suspension record</h3>' + data.suspensions.map(function (s) {
+        return '<article class="suspension"><h4>' + RR.esc(RR.fmtDate(s.from))
+          + (s.until ? ' until ' + RR.esc(RR.fmtDate(s.until)) : ', no end date set') + '</h4>'
+          + '<p class="muted">' + (s.open ? 'Open' : 'Lifted by ' + RR.esc(s.liftedBy) + ' on '
+            + RR.esc(RR.fmtDateTime(s.liftedAt)) + ' to ' + RR.esc(s.liftedTo)) + '</p>'
+          + s.entries.map(function (e) {
+            return '<div class="suspension-entry' + (e.kind !== 'comment' ? ' system' : '') + '">'
+              + '<div class="suspension-meta">' + RR.esc(e.author) + ' · ' + RR.esc(RR.fmtDateTime(e.at)) + '</div>'
+              + '<div class="suspension-body">' + RR.esc(e.body) + '</div>'
+              + '<div class="suspension-files">' + e.files.map(function (f) {
+                const url = 'api/suspension.php?file=' + encodeURIComponent(f.id);
+                return '<a class="suspension-file" href="' + url + '" target="_blank" rel="noopener">'
+                  + (f.isImage ? '<img src="' + url + '" alt="' + RR.esc(f.name) + '" loading="lazy">' : '')
+                  + '<span>' + RR.esc(f.name) + '</span></a>';
+              }).join('') + '</div></div>';
+          }).join('')
+          + '<form class="suspension-form" data-suspension="' + RR.esc(s.id) + '">'
+          + '<label class="field"><span>Add a comment (office only)</span><textarea name="body" maxlength="4000"></textarea></label>'
+          + '<label class="field"><span>Pictures, PDFs or text files</span><input type="file" name="files" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"></label>'
+          + '<button class="btn small" type="submit">Add to record</button></form></article>';
+      }).join('');
+      root.querySelectorAll('form').forEach(function (form) {
+        form.addEventListener('submit', async function (event) {
+          event.preventDefault();
+          const button = form.querySelector('button');
+          button.disabled = true;
+          try {
+            const chosen = Array.from(form.elements.files.files);
+            if (chosen.length > data.maxFiles) throw new Error('Attach at most ' + data.maxFiles + ' files at a time.');
+            const files = await Promise.all(chosen.map(suspensionFile));
+            if (data.maxBytes > 0 && files.reduce(function (n, f) { return n + f.size; }, 0) > data.maxBytes) {
+              throw new Error('Those files are too large together. Keep a single post under ' + (data.maxBytes / 1024 / 1024).toFixed(1) + ' MB.');
+            }
+            const body = form.elements.body.value.trim();
+            if (!body && !files.length) throw new Error('Write a comment or attach a file.');
+            const payload = new FormData();
+            payload.append('suspensionId', form.dataset.suspension);
+            payload.append('body', body);
+            files.forEach(function (f) { payload.append('files[]', f); });
+            const response = await fetch('api/suspension.php', { method: 'POST', credentials: 'same-origin', body: payload });
+            const result = await response.json();
+            if (!response.ok || !result.ok) throw new Error(result.error || 'Request failed (' + response.status + ')');
+            RR.toast('Added to the record.');
+            await loadSuspensions(root, member);
+          } catch (e) { RR.toast(e.message, true); }
+          finally { button.disabled = false; }
+        });
+      });
+    } catch (e) { RR.toast(e.message, true); }
+  }
+
   async function openMember(id) {
     const m = MEMBERS.find(function (x) { return x.id === id; });
     if (!m) return;
@@ -285,7 +377,7 @@
       + '</div>'
       + '<div class="field-row">'
       + '<label class="field"><span>Grade</span><select id="fGrade"' + (canRank ? '' : ' disabled') + '>' + gradeOptions(m.grade) + '</select></label>'
-      + '<label class="field"><span>Status</span><select id="fStatus"' + (canRank ? '' : ' disabled') + '>' + statusOptions(m.status) + '</select></label>'
+      + '<label class="field"><span>Status</span><select id="fStatus"' + (canRank && (PERMS.canSeeNotes || m.status !== 'Suspended') ? '' : ' disabled') + '>' + statusOptions(m.status) + '</select></label>'
       + '</div>'
       + '<div class="field-row">'
       + '<label class="field"><span>PO box</span><input id="fPo" value="' + RR.esc(m.po) + '" placeholder="e.g. 1481"' + readOnly + '></label>'
@@ -299,6 +391,12 @@
       +   '<span>On leave since</span>'
       +   '<input id="fLoa" type="date" value="' + RR.esc(m.loaStart || '') + '"'
       +   (canRank ? '' : ' disabled') + '></label>'
+      + (PERMS.canSeeNotes
+          ? '<div id="fSuspWrap" class="' + (m.status === 'Suspended' ? '' : 'hide') + '"><div class="field-row">'
+            + '<label class="field"><span>Suspended from</span><input id="fSuspFrom" type="date" value="' + RR.esc(m.suspendedFrom || '') + '"' + (canRank ? '' : ' disabled') + '></label>'
+            + '<label class="field"><span>Until (optional)</span><input id="fSuspUntil" type="date" value="' + RR.esc(m.suspendedUntil || '') + '"' + (canRank ? '' : ' disabled') + '></label></div>'
+            + (m.status !== 'Suspended' ? '<label class="field"><span>Reason for the suspension (office only)</span><textarea id="fSuspReason" maxlength="4000"></textarea></label>' : '') + '</div>'
+          : (m.status === 'Suspended' ? '<p class="suspension-dates">' + suspensionDates(m) + '</p>' : ''))
       + '<label class="field"><span>Office (outside the ladder)</span><input id="fOffice" value="' + RR.esc(m.office) + '" placeholder="Governor, Founder&hellip;"' + (isMgr ? '' : ' disabled') + '></label>'
       + '<label class="field"><span>Trainee</span><input id="fTrainee" value="' + RR.esc(m.trainee) + '"' + readOnly + '></label>'
       + (PERMS.canSeeNotes
@@ -310,6 +408,7 @@
             + '<label class="field"><span>Note</span><textarea id="fNote"' + readOnly + ' placeholder="Why they left, and whether they can come back&hellip;">'
             + RR.esc(m.note) + '</textarea></label>'
           : '')
+      + (PERMS.canSeeNotes ? '<section id="suspensionRecord" class="hide"></section>' : '')
       + '<h3 style="margin-top:14px">Trains</h3>' + trainHtml
       + (PERMS.canSeeHours ? hoursHtml(hours) : '')
       + '<h3 style="margin-top:14px">Discord</h3>'
@@ -332,6 +431,16 @@
       + '<div class="modal-body">' + body + '</div>'
       + '<div class="modal-foot">' + foot + '</div>'
     );
+
+    if (PERMS.canSeeNotes) loadSuspensions(dlg.querySelector('#suspensionRecord'), m);
+    const suspWrap = dlg.querySelector('#fSuspWrap');
+    if (suspWrap) dlg.querySelector('#fStatus').addEventListener('change', function () {
+      const on = this.value === 'Suspended';
+      suspWrap.classList.toggle('hide', !on);
+      const from = dlg.querySelector('#fSuspFrom'), reason = dlg.querySelector('#fSuspReason');
+      if (on && !from.value) from.value = today();
+      if (reason) reason.required = on;
+    });
 
     // A shift row opens to show the duty-channel post it came from.
     Array.prototype.forEach.call(dlg.querySelectorAll('tr.shift-row'), function (tr) {
@@ -368,6 +477,11 @@
 
     const save = dlg.querySelector('#saveBtn');
     if (save) save.addEventListener('click', async function () {
+      if (dlg.querySelector('#fStatus').value === 'Suspended' && PERMS.canSeeNotes) {
+        const from = dlg.querySelector('#fSuspFrom'), reason = dlg.querySelector('#fSuspReason');
+        from.required = true;
+        if (!from.reportValidity() || (reason && !reason.reportValidity())) return;
+      }
       save.disabled = true;
       try {
         const r = await RR.post('api/roster.php', {
@@ -383,6 +497,9 @@
           probationDate: dlg.querySelector('#fProb').value,
           canTrainAfter: dlg.querySelector('#fAfter').value,
           loaStart:  dlg.querySelector('#fLoa') ? dlg.querySelector('#fLoa').value : '',
+          suspendedFrom: PERMS.canSeeNotes ? dlg.querySelector('#fSuspFrom').value : undefined,
+          suspendedUntil: PERMS.canSeeNotes ? dlg.querySelector('#fSuspUntil').value : undefined,
+          suspendReason: dlg.querySelector('#fSuspReason') ? dlg.querySelector('#fSuspReason').value : undefined,
           note:      PERMS.canSeeNotes ? dlg.querySelector('#fNote').value : undefined,
           rehire:    PERMS.canSeeNotes ? dlg.querySelector('#fRehire').value : undefined
         });
@@ -530,7 +647,7 @@
       + '</div>'
       + '<div class="field-row">'
       + '<label class="field"><span>Grade</span><select id="nGrade">' + gradeOptions(0) + '</select></label>'
-      + '<label class="field"><span>Status</span><select id="nStatus">' + statusOptions('Probation') + '</select></label>'
+      + '<label class="field"><span>Status</span><select id="nStatus">' + statusOptions('Probation', true) + '</select></label>'
       + '</div>'
       + '<div class="field-row">'
       + '<label class="field"><span>PO box</span><input id="nPo"></label>'
@@ -592,7 +709,11 @@
       document.getElementById(id).addEventListener('input', render);
       document.getElementById(id).addEventListener('change', render);
     });
-    try { await load(); }
+    try {
+      await load();
+      const member = new URLSearchParams(window.location.search).get('member');
+      if (member) await openMember(member);
+    }
     catch (e) {
       document.getElementById('rosterBody').innerHTML =
         '<tr><td colspan="' + cols() + '" class="empty">' + RR.esc(e.message) + '</td></tr>';

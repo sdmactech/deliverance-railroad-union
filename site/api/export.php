@@ -89,6 +89,9 @@ if ($what === 'backup') {
         'trains'     => $dump('trains'),
         'claims'     => $dump('claims'),
         'events'     => $dump('events'),
+        'suspensions' => $dump('suspensions'),
+        'suspension_entries' => $dump('suspension_entries'),
+        'suspension_files' => $dump('suspension_files'),
     ];
     rr_log_event('export', 'backup', ['members' => count($payload['members'])]);
     header('Content-Type: application/json; charset=utf-8');

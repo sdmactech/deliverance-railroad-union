@@ -10,8 +10,10 @@
  * Attention, most urgent first:
  *   reclaim   forfeited or repossessed on the site, not yet taken back in game
  *   departed  owner has left (Quit, Fired, ...) but the train is still active
+ *   suspend_over  member whose suspension end date has passed
  *   orphan    active train whose owner is not on the roster
  *   loa       owner on leave; the train sits idle (information only)
+ *   suspended member off duty (information only)
  */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
@@ -52,7 +54,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 // ------------------------------------------------------------------ read ---
 
 $members = [];
-foreach ($db->query('SELECT id, first_name, last_name, status, grade, loa_start FROM members') as $m) {
+foreach ($db->query('SELECT id, first_name, last_name, status, grade, loa_start, suspended_from, suspended_until FROM members') as $m) {
     $members[$m['id']] = $m;
 }
 $name = function (string $id) use ($members): string {
@@ -128,7 +130,27 @@ foreach ($trains as $t) {
 }
 $fleet['owners'] = count($owners);
 
-$rank = ['reclaim' => 0, 'departed' => 1, 'orphan' => 2, 'loa' => 3];
+$today = rr_now_date();
+/** "2026-11-08" -> "Nov 8, 2026", the way the rest of the page writes dates. */
+$nice = function (string $d): string {
+    $t = DateTimeImmutable::createFromFormat("!Y-m-d", $d);
+    return $t ? $t->format("M j, Y") : $d;
+};
+foreach ($members as $m) {
+    if ($m['status'] !== RR_SUSPENDED) continue;
+    $over = $m['suspended_until'] !== '' && $m['suspended_until'] < $today;
+    $memberName = $name($m['id']);
+    $attention[] = [
+        'id' => 'm-' . $m['id'], 'memberId' => $m['id'], 'name' => $memberName,
+        'status' => RR_SUSPENDED, 'kind' => $over ? 'suspend_over' : 'suspended', 'since' => '',
+        'why' => $over
+            ? $memberName . "'s suspension ended " . $nice($m["suspended_until"]) . '. Lift it or set a new end date.'
+            : $memberName . ' is suspended since ' . $nice($m["suspended_from"])
+                . ($m['suspended_until'] !== '' ? ' until ' . $nice($m["suspended_until"]) : '') . '.',
+    ];
+}
+
+$rank = ['reclaim' => 0, 'departed' => 1, 'suspend_over' => 2, 'orphan' => 3, 'loa' => 4, 'suspended' => 5];
 usort($attention, function ($a, $b) use ($rank) {
     return [$rank[$a['kind']], $a['name']] <=> [$rank[$b['kind']], $b['name']];
 });

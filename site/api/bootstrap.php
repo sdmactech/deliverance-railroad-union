@@ -30,6 +30,14 @@ function rr_data_dir(): string
     return '/volume1/docker/railroad-union/data';
 }
 
+/** Suspension files. Under the data volume, outside the read-only web root. */
+function rr_upload_dir(): string
+{
+    $dir = rr_data_dir() . '/uploads/suspensions';
+    if (!is_dir($dir)) @mkdir($dir, 0770, true);
+    return $dir;
+}
+
 function rr_config(): array
 {
     static $cfg = null;
@@ -154,6 +162,62 @@ function rr_migrate(PDO $db): void
     if (!in_array('rehire', $cols, true)) {
         $db->exec("ALTER TABLE members ADD COLUMN rehire TEXT NOT NULL DEFAULT ''");
     }
+    // Suspension dates, shown on the roster row like the LOA date (Mac,
+    // 2026-11-08). The reason and its paper trail live in the suspension
+    // tables below and are office-only.
+    if (!in_array('suspended_from', $cols, true)) {
+        $db->exec("ALTER TABLE members ADD COLUMN suspended_from TEXT NOT NULL DEFAULT ''");
+        $db->exec("ALTER TABLE members ADD COLUMN suspended_until TEXT NOT NULL DEFAULT ''");
+    }
+
+    // One row per suspension. Lifting one closes it (lifted_at) but never
+    // deletes it, so a member's history of suspensions stays on the record.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS suspensions (
+            id          TEXT PRIMARY KEY,
+            member_id   TEXT NOT NULL,
+            start_date  TEXT NOT NULL DEFAULT '',
+            end_date    TEXT NOT NULL DEFAULT '',
+            opened_at   TEXT NOT NULL DEFAULT '',
+            opened_by   TEXT NOT NULL DEFAULT '',
+            lifted_at   TEXT NOT NULL DEFAULT '',
+            lifted_by   TEXT NOT NULL DEFAULT '',
+            lifted_to   TEXT NOT NULL DEFAULT ''
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS suspensions_member ON suspensions(member_id, opened_at DESC)");
+    // The running thread: the reason first, then whatever staff add, each
+    // signed and dated. kind is 'comment' or a system line ('opened', 'dates',
+    // 'lifted') written by the site itself.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS suspension_entries (
+            id             TEXT PRIMARY KEY,
+            suspension_id  TEXT NOT NULL,
+            member_id      TEXT NOT NULL,
+            at             TEXT NOT NULL,
+            author_id      TEXT NOT NULL DEFAULT '',
+            author_name    TEXT NOT NULL DEFAULT '',
+            kind           TEXT NOT NULL DEFAULT 'comment',
+            body           TEXT NOT NULL DEFAULT ''
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS suspension_entries_s ON suspension_entries(suspension_id, at)");
+    // Files on an entry. Stored under the data directory with a random name,
+    // never in the web root, and only handed out through the API to staff.
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS suspension_files (
+            id        TEXT PRIMARY KEY,
+            entry_id  TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            name      TEXT NOT NULL DEFAULT '',
+            stored    TEXT NOT NULL,
+            mime      TEXT NOT NULL DEFAULT '',
+            size      INTEGER NOT NULL DEFAULT 0,
+            sha256    TEXT NOT NULL DEFAULT '',
+            at        TEXT NOT NULL DEFAULT ''
+        )
+    ");
+    $db->exec("CREATE INDEX IF NOT EXISTS suspension_files_e ON suspension_files(entry_id)");
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS trains (
@@ -314,7 +378,7 @@ const RR_GRADES = [
 ];
 
 const RR_STATUSES = [
-    'Probation', 'Hired', 'Government', 'LOA',
+    'Probation', 'Hired', 'Government', 'LOA', 'Suspended',
     'Quit', 'Fired', 'Terminated', 'Banned', 'Released',
 ];
 
@@ -326,6 +390,13 @@ const RR_STATUSES = [
  * LOA is a temporary absence and Released predates this list.
  */
 const RR_PRIVATE_STATUSES = ['Quit', 'Fired', 'Terminated', 'Banned'];
+
+/**
+ * Suspended (Mac, 2026-11-08): Operations and Executives may set it, the
+ * member keeps their trains, everyone sees the status and dates, and only the
+ * office sees the reason thread and its files.
+ */
+const RR_SUSPENDED = 'Suspended';
 
 /** Disciplinary endings are an executive act, like deleting. */
 const RR_DISCIPLINARY_STATUSES = ['Fired', 'Terminated', 'Banned'];
@@ -554,9 +625,12 @@ function rr_date(string $v): string
 {
     $v = trim($v);
     if ($v === '') return '';
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) return $v;
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m)) {
+        return checkdate((int)$m[2], (int)$m[3], (int)$m[1]) ? $v : '';
+    }
     if (preg_match('#^(\d{1,2})/(\d{1,2})$#', $v, $m)) {
         $year = (int)gmdate('Y');
+        if (!checkdate((int)$m[1], (int)$m[2], $year)) return '';
         return sprintf('%04d-%02d-%02d', $year, (int)$m[1], (int)$m[2]);
     }
     try {
@@ -621,6 +695,8 @@ function rr_member_public(array $r, ?array $perms = null): array
         'trainee'        => $r['trainee'],
         'probationDate'  => $r['probation_date'],
         'loaStart'       => $r['loa_start'] ?? '',
+        'suspendedFrom'  => $r['suspended_from'] ?? '',
+        'suspendedUntil' => $r['suspended_until'] ?? '',
         'canTrainAfter'  => $r['can_train_after'],
         'note'           => $seesNotes ? $r['note'] : '',
         'rehire'         => $seesNotes ? (string)($r['rehire'] ?? '') : '',

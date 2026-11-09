@@ -12,10 +12,12 @@
     reclaim:  { label: 'Take back in game', short: 'Reclaim' },
     departed: { label: 'Owner has left', short: 'Departed' },
     orphan:   { label: 'No owner on the roster', short: 'Orphan' },
+    suspend_over: { label: 'Suspension ended', short: 'Overdue' },
+    suspended: { label: 'Member suspended', short: 'Suspended' },
     loa:      { label: 'Owner on leave', short: 'Idle' }
   };
 
-  const ACT = { reclaim: 1, departed: 1, orphan: 1 };
+  const ACT = { reclaim: 1, departed: 1, orphan: 1, suspend_over: 1 };
   function urgentCount() { return DATA.attention.filter(function (a) { return ACT[a.kind]; }).length; }
 
   function fmtRange(from, to) {
@@ -32,7 +34,7 @@
     const t = [
       ['On the rails', f.active, f.owners + ' owner' + (f.owners === 1 ? '' : 's')],
       ['New, 30 days', DATA.arrivals.length, 'Engines registered by members'],
-      ['To act on', urgent, urgent ? 'Take back, repossess or assign' : 'All clear'],
+      ['To act on', urgent, urgent ? 'Trains or suspensions need attention' : 'All clear'],
       ['Off the books', (f.sold || 0) + (f.repossessed || 0) + (f.forfeited || 0) + (f.removed || 0),
         (f.repossessed || 0) + ' repossessed · ' + (f.forfeited || 0) + ' forfeited']
     ];
@@ -88,7 +90,9 @@
     $('attention').innerHTML = list.map(function (a) {
       const k = KIND[a.kind];
       let act = '';
-      if (a.kind === 'reclaim') {
+      if (a.kind === 'suspend_over' || a.kind === 'suspended') {
+        act = '<a class="btn small" href="index.html?member=' + encodeURIComponent(a.memberId) + '">Open record</a>';
+      } else if (a.kind === 'reclaim') {
         act = '<button class="btn small primary" data-taken="' + esc(a.id) + '" data-name="' + esc(a.name) + '">Taken back in game</button>';
       } else if (a.kind === 'departed' && DATA.canRepossess) {
         act = '<button class="btn small danger" data-repo="' + esc(a.id) + '" data-name="' + esc(a.name) + '">Repossess</button>';

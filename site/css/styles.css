@@ -587,7 +587,7 @@ table.rr.hours tr.shift-post td { background: var(--paper-2); font-size: .82rem;
   width: 14px; height: 14px; border-radius: 50%; margin-top: 5px; position: relative;
   background: var(--ink-4); box-shadow: inset 0 -2px 3px oklch(0 0 0 / 0.3);
 }
-.signal.reclaim .lamp, .signal.departed .lamp { background: oklch(0.6 0.2 28); box-shadow: 0 0 0 3px oklch(0.6 0.2 28 / 0.18), 0 0 14px oklch(0.65 0.2 28 / 0.75); animation: lamp 1.6s var(--ease-io) infinite alternate; }
+.signal.reclaim .lamp, .signal.departed .lamp, .signal.suspend_over .lamp { background: oklch(0.6 0.2 28); box-shadow: 0 0 0 3px oklch(0.6 0.2 28 / 0.18), 0 0 14px oklch(0.65 0.2 28 / 0.75); animation: lamp 1.6s var(--ease-io) infinite alternate; }
 .signal.orphan .lamp { background: oklch(0.78 0.15 80); box-shadow: 0 0 12px oklch(0.8 0.15 80 / 0.6); }
 .signal.loa .lamp { background: oklch(0.6 0.1 245); }
 .signal.done .lamp { background: oklch(0.6 0.14 150); box-shadow: 0 0 10px oklch(0.6 0.14 150 / 0.5); animation: none; }
@@ -715,3 +715,26 @@ table.rr.hours tr.shift-post td { background: var(--paper-2); font-size: .82rem;
 /* The 2D train that used to cross the page foot is retired in v2; the engine
    lives in the hero now. Kept hidden in case an old cached page loads it. */
 #rrTrackbed { display: none; }
+
+/* Suspension dates are public; the record belongs to the office. */
+.badge.suspended { color: var(--amber); background: var(--amber-bg); border-style: dashed; }
+.suspension-dates { font-size: .74rem; }
+.suspension-over { color: var(--red); font-weight: 700; }
+.signal.suspended .lamp { background: var(--amber); animation: none; }
+.suspension { margin-top: 12px; padding: 12px 0; border-top: 1px solid var(--ink-3); min-width: 0; }
+.suspension h4, .suspension p { margin: 0 0 8px; }
+.suspension-entry { margin: 10px 0; padding: 10px 12px; border-left: 3px solid var(--amber); background: var(--paper); overflow-wrap: anywhere; }
+.suspension-entry.system { color: var(--ink-3); border-left-color: var(--ink-3); font-size: .85rem; }
+.suspension-meta { color: var(--ink-3); font-size: .76rem; margin-bottom: 4px; }
+.suspension-body { white-space: pre-wrap; }
+.suspension-files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.suspension-file { display: inline-flex; flex-direction: column; align-items: flex-start; max-width: 100%; padding: 6px; border: 1px solid var(--ink-3); border-radius: var(--radius); font-size: .78rem; overflow-wrap: anywhere; }
+.suspension-file img { max-width: 120px; max-height: 120px; object-fit: contain; }
+.suspension-form { margin-top: 12px; min-width: 0; }
+.suspension-form input { width: 100%; min-width: 0; }
+@media (max-width: 767px) {
+  .suspension-form input, .suspension-form textarea { font-size: 16px; }
+  #fSuspWrap .field-row { grid-template-columns: minmax(0, 1fr); }
+  .signal-act { flex-wrap: wrap; }
+  .signal-why { overflow-wrap: anywhere; }
+}

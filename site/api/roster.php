@@ -115,6 +115,58 @@ if ($method !== 'POST') {
     rr_fail('Method not allowed.', 405);
 }
 
+/**
+ * Keep the suspensions table in step with a status change. Into Suspended
+ * opens a new suspension with the reason as its first entry; moving the dates
+ * while suspended notes it on the thread; out of Suspended closes it. Nothing
+ * is deleted, so past suspensions stay on the member's record.
+ */
+function rr_suspension_sync(PDO $db, string $memberId, array $before, array $after, string $reason): void
+{
+    $was = (string)$before['status'] === RR_SUSPENDED;
+    $is  = (string)$after['status'] === RR_SUSPENDED;
+    if (!$was && !$is) return;
+
+    $me = rr_viewer() ?? [];
+    $who = (string)($me['name'] ?? '');
+    $entry = function (string $sid, string $kind, string $body) use ($db, $memberId, $me, $who): void {
+        $db->prepare('INSERT INTO suspension_entries
+            (id, suspension_id, member_id, at, author_id, author_name, kind, body)
+            VALUES (?,?,?,?,?,?,?,?)')
+           ->execute([rr_uuid(), $sid, $memberId, rr_now(), (string)($me['discordId'] ?? ''), $who, $kind, $body]);
+    };
+    $open = $db->prepare("SELECT * FROM suspensions WHERE member_id = ? AND lifted_at = ''
+                          ORDER BY opened_at DESC LIMIT 1");
+    $open->execute([$memberId]);
+    $cur = $open->fetch() ?: null;
+
+    if ($is && (!$was || !$cur)) {
+        $sid = rr_uuid();
+        $db->prepare('INSERT INTO suspensions (id, member_id, start_date, end_date, opened_at, opened_by)
+                      VALUES (?,?,?,?,?,?)')
+           ->execute([$sid, $memberId, $after['suspended_from'], $after['suspended_until'], rr_now(), $who]);
+        $entry($sid, 'opened', 'Suspended from ' . $after['suspended_from']
+            . ($after['suspended_until'] !== '' ? ' until ' . $after['suspended_until'] : ', no end date set') . '.');
+        if ($reason !== '') $entry($sid, 'comment', $reason);
+        rr_log_event('member.suspend', $memberId, ['from' => $after['suspended_from'], 'until' => $after['suspended_until']]);
+        return;
+    }
+    if ($is && $was && $cur
+        && ($cur['start_date'] !== $after['suspended_from'] || $cur['end_date'] !== $after['suspended_until'])) {
+        $db->prepare('UPDATE suspensions SET start_date = ?, end_date = ? WHERE id = ?')
+           ->execute([$after['suspended_from'], $after['suspended_until'], $cur['id']]);
+        $entry($cur['id'], 'dates', 'Dates changed to ' . $after['suspended_from']
+            . ($after['suspended_until'] !== '' ? ' until ' . $after['suspended_until'] : ', no end date') . '.');
+        return;
+    }
+    if (!$is && $was && $cur) {
+        $db->prepare('UPDATE suspensions SET lifted_at = ?, lifted_by = ?, lifted_to = ? WHERE id = ?')
+           ->execute([rr_now(), $who, (string)$after['status'], $cur['id']]);
+        $entry($cur['id'], 'lifted', 'Suspension lifted; status now ' . $after['status'] . '.');
+        rr_log_event('member.unsuspend', $memberId, ['to' => $after['status']]);
+    }
+}
+
 // ----------------------------------------------------------------- writes ---
 $in     = rr_input();
 $action = (string)($in['action'] ?? '');
@@ -215,6 +267,9 @@ if ($action === 'create') {
     if (empty($perms['manager']) && in_array($status, RR_DISCIPLINARY_STATUSES, true)) {
         rr_fail('Only Railway Executives can fire, terminate or ban somebody.', 403);
     }
+    if ($status === RR_SUSPENDED) {
+        rr_fail('Add them to the roster first, then suspend them from their record, so the reason goes on file.');
+    }
     $loa = $status === 'LOA'
         ? (rr_date(rr_str($in['loaStart'] ?? '', 40)) ?: rr_now_date()) : '';
     $prob   = rr_date(rr_str($in['probationDate'] ?? '', 40));
@@ -266,6 +321,19 @@ if ($action === 'update') {
         && in_array((string)$in['status'], RR_DISCIPLINARY_STATUSES, true)) {
         rr_fail('Only Railway Executives can fire, terminate or ban somebody.', 403);
     }
+    // Suspending, lifting a suspension or moving its dates is office work:
+    // Operations and Executives by the Discord role (Mac, 2026-11-08). The
+    // reason thread is office-only, so somebody who cannot read it cannot
+    // open or close one either.
+    $touchesSuspension = $wantsStatus
+        && ((string)$in['status'] === RR_SUSPENDED || (string)$before['status'] === RR_SUSPENDED);
+    if ($touchesSuspension && empty($perms['canSeeNotes'])) {
+        rr_fail('Only Railway Operations and Railway Executives can suspend somebody or lift a suspension.', 403);
+    }
+    $suspReason = rr_str($in['suspendReason'] ?? '', 4000);
+    if ($wantsStatus && (string)$in['status'] === RR_SUSPENDED && $suspReason === '') {
+        rr_fail('Give the reason for the suspension. It goes on file for the office only.');
+    }
     // A Fired, Terminated or Banned record is the executive's to change -
     // including hiring that person back. Operations can read it, not edit it.
     if (!$isMgr && in_array((string)$before['status'], RR_DISCIPLINARY_STATUSES, true)) {
@@ -307,6 +375,40 @@ if ($action === 'update') {
             : ((string)$before['status'] === 'LOA' ? (string)($before['loa_start'] ?? '') : rr_now_date()))
         : '';
 
+    // Suspension dates, the same way: a start (today unless given) and an
+    // optional end. Off Suspended, both clear; the history stays in the
+    // suspensions table.
+    if ($fields['status'] === RR_SUSPENDED) {
+        $wasSusp = (string)$before['status'] === RR_SUSPENDED;
+        if ($wasSusp && empty($perms['canSeeNotes'])
+            && ((array_key_exists('suspendedFrom', $in) && rr_date(rr_str($in['suspendedFrom'], 40)) !== (string)$before['suspended_from'])
+             || (array_key_exists('suspendedUntil', $in) && rr_date(rr_str($in['suspendedUntil'], 40)) !== (string)$before['suspended_until']))) {
+            rr_fail('Only Railway Operations and Railway Executives can change suspension dates.', 403);
+        }
+        foreach (['suspendedFrom', 'suspendedUntil'] as $k) {
+            $raw = array_key_exists($k, $in) ? rr_str($in[$k], 40) : '';
+            if ($raw !== '' && rr_date($raw) === '') rr_fail('That is not a real date: ' . $raw);
+        }
+        if ($wasSusp && empty($perms['canSeeNotes'])) {
+            // Somebody who cannot see the record keeps its dates exactly.
+            $from  = (string)$before['suspended_from'];
+            $until = (string)$before['suspended_until'];
+        } else {
+            $from = array_key_exists('suspendedFrom', $in) ? rr_date(rr_str($in['suspendedFrom'], 40)) : '';
+            if ($from === '') $from = $wasSusp ? (string)$before['suspended_from'] : rr_now_date();
+            if ($from === '') $from = rr_now_date();
+            $until = array_key_exists('suspendedUntil', $in)
+                ? rr_date(rr_str($in['suspendedUntil'], 40))
+                : ($wasSusp ? (string)$before['suspended_until'] : '');
+        }
+        if ($until !== '' && $until < $from) rr_fail('The suspension cannot end before it starts.');
+        $fields['suspended_from']  = $from;
+        $fields['suspended_until'] = $until;
+    } else {
+        $fields['suspended_from']  = '';
+        $fields['suspended_until'] = '';
+    }
+
     $fields['can_train_after'] = array_key_exists('canTrainAfter', $in)
         ? rr_date(rr_str($in['canTrainAfter'], 40))
         : ($fields['probation_date'] !== $before['probation_date']
@@ -317,10 +419,17 @@ if ($action === 'update') {
         first_name=:first_name, last_name=:last_name, grade=:grade, status=:status,
         office=:office, agency=:agency, po=:po, trainee=:trainee,
         probation_date=:probation_date, can_train_after=:can_train_after,
-        loa_start=:loa_start, note=:note, rehire=:rehire, updated_at=:updated_at WHERE id=:id');
+        loa_start=:loa_start, suspended_from=:suspended_from, suspended_until=:suspended_until,
+        note=:note, rehire=:rehire, updated_at=:updated_at WHERE id=:id');
     $fields['updated_at'] = rr_now();
     $fields['id'] = $id;
+    // The member row, the suspension record and any engines taken all land
+    // together or not at all.
+    $db->beginTransaction();
+    try {
     $st->execute($fields);
+
+    rr_suspension_sync($db, $id, $before, $fields, $suspReason);
 
     // Leaving the union takes your engines with you. Walk out and they are
     // forfeited; get thrown out and they are repossessed. Either way it is
@@ -340,6 +449,12 @@ if ($action === 'update') {
                 'trains'  => array_column($tookTrains, 'name'),
             ]);
         }
+    }
+    $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        error_log('roster update ' . $id . ': ' . $e->getMessage());
+        rr_fail('Could not save that record. Nothing was changed.', 500);
     }
 
     $changed = [];
@@ -404,6 +519,24 @@ if ($action === 'merge') {
         $db->prepare('DELETE FROM members WHERE id = ?')->execute([$mergeId]);
         $db->prepare('UPDATE trains SET owner_id = ? WHERE owner_id = ?')
            ->execute([$keepId, $mergeId]);
+        // Suspension history follows the person, like their trains. An open
+        // suspension on the absorbed record is closed first, so the survivor
+        // never carries two open ones (or one it cannot see the end of).
+        $openS = $db->prepare("SELECT id FROM suspensions WHERE member_id = ? AND lifted_at = ''");
+        $openS->execute([$mergeId]);
+        $me = rr_viewer() ?? [];
+        foreach ($openS->fetchAll(PDO::FETCH_COLUMN) as $sid) {
+            $db->prepare("UPDATE suspensions SET lifted_at = ?, lifted_by = ?, lifted_to = 'Merged' WHERE id = ?")
+               ->execute([rr_now(), (string)($me['name'] ?? ''), $sid]);
+            $db->prepare('INSERT INTO suspension_entries
+                (id, suspension_id, member_id, at, author_id, author_name, kind, body) VALUES (?,?,?,?,?,?,?,?)')
+               ->execute([rr_uuid(), $sid, $mergeId, rr_now(), (string)($me['discordId'] ?? ''),
+                          (string)($me['name'] ?? ''), 'lifted',
+                          'Closed when this record was merged into ' . trim($keep['first_name'] . ' ' . $keep['last_name']) . '.']);
+        }
+        foreach (['suspensions', 'suspension_entries', 'suspension_files'] as $t) {
+            $db->prepare("UPDATE $t SET member_id = ? WHERE member_id = ?")->execute([$keepId, $mergeId]);
+        }
 
         if ($merged) {
             $sets = [];
@@ -428,7 +561,8 @@ if ($action === 'merge') {
                  'fieldsTaken' => array_keys($merged), 'trainsMoved' => count($moved)]);
     } catch (Throwable $e) {
         $db->rollBack();
-        rr_fail('Merge failed: ' . $e->getMessage(), 500);
+        error_log('merge: ' . $e->getMessage());
+        rr_fail('Merge failed. Nothing was changed.', 500);
     }
 }
 
@@ -453,6 +587,16 @@ if ($action === 'delete') {
 
         $db->prepare('DELETE FROM claims WHERE member_id = ?')->execute([$id]);
         $db->prepare('DELETE FROM members WHERE id = ?')->execute([$id]);
+        // Record ids are made from names, so a later hire with the same name
+        // would get this id back. Park the suspension history under a deleted
+        // id instead of destroying it: kept for the office, never inherited.
+        $db->prepare("UPDATE suspensions SET lifted_at = ?, lifted_by = ?, lifted_to = 'Deleted'
+                      WHERE member_id = ? AND lifted_at = ''")
+           ->execute([rr_now(), (string)($me['name'] ?? ''), $id]);
+        $parked = 'deleted:' . $id . ':' . gmdate('YmdHis');
+        foreach (['suspensions', 'suspension_entries', 'suspension_files'] as $t) {
+            $db->prepare("UPDATE $t SET member_id = ? WHERE member_id = ?")->execute([$parked, $id]);
+        }
         $db->commit();
 
         // The whole record goes into the log so a mistaken delete is recoverable.
@@ -460,7 +604,8 @@ if ($action === 'delete') {
         rr_json(['ok' => true, 'trainsRemoved' => count($trains)]);
     } catch (Throwable $e) {
         $db->rollBack();
-        rr_fail('Delete failed: ' . $e->getMessage(), 500);
+        error_log('delete: ' . $e->getMessage());
+        rr_fail('Delete failed. Nothing was changed.', 500);
     }
 }
 
